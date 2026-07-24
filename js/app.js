@@ -507,7 +507,7 @@ class ECommerceApp {
     const src = (product.image.startsWith("http://") || product.image.startsWith("https://") || product.image.startsWith("data:"))
       ? product.image
       : `/assets/products/${product.image}`;
-    return `<img src="${src}" alt="${product.name}" class="${className}" loading="lazy" onerror="this.outerHTML='<div class=\\'${className} fallback-svg-container\\'>'+window.GalaxyUtils.getPremiumFurnitureSVG('${product.category.replace(/'/g, "\\'")}', '${product.name.replace(/'/g, "\\'")}')+'</div>'">`;
+    return `<img src="${src}" alt="${product.name}" class="${className}" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=\\'${className} fallback-svg-container\\'>'+window.GalaxyUtils.getPremiumFurnitureSVG('${product.category.replace(/'/g, "\\'")}', '${product.name.replace(/'/g, "\\'")}')+'</div>'">`;
   }
 
   getCategoryName(catId) {
@@ -1307,19 +1307,19 @@ class ECommerceApp {
         
         <div class="about-gallery-grid">
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=600&q=80" alt="Luxury Living Room Sourcing">
+            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=600&q=80" alt="Luxury Living Room Sourcing" loading="lazy" decoding="async">
             <div class="gallery-item-label">Luxury Living Curation</div>
           </div>
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&w=600&q=80" alt="Marble Dining Sets">
+            <img src="https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&w=600&q=80" alt="Marble Dining Sets" loading="lazy" decoding="async">
             <div class="gallery-item-label">Italian Marble Dining</div>
           </div>
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80" alt="Premium Bedroom Collection">
+            <img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80" alt="Premium Bedroom Collection" loading="lazy" decoding="async">
             <div class="gallery-item-label">Imported Bedroom Sets</div>
           </div>
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80" alt="Bespoke Metal Accents">
+            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80" alt="Bespoke Metal Accents" loading="lazy" decoding="async">
             <div class="gallery-item-label">Metallic Accent Details</div>
           </div>
         </div>
