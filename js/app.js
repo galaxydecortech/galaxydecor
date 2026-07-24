@@ -1359,19 +1359,22 @@ class ECommerceApp {
     let activeCategory = queryParams.category || "";
     let searchQuery = queryParams.search || "";
 
-    // Set up search terms filters inside App Root
     this.appRoot.innerHTML = `
-      <section class="py-section container">
+      <section class="py-section catalog-py-section container">
         <div class="catalog-layout">
           <!-- Sidebar Filters -->
-          <aside class="filters-sidebar collapsed" id="catalog-filters-sidebar">
+          <aside class="filters-sidebar" id="catalog-filters-sidebar">
             <div class="filters-header" id="filters-header-toggle">
               <div class="filters-title-wrap">
                 <i data-lucide="sliders-horizontal" class="filters-header-icon"></i>
                 <span class="filters-title">Filter Selection</span>
-                <i data-lucide="chevron-down" class="filter-collapse-chevron"></i>
               </div>
-              <button class="clear-filters-btn" id="btn-clear-filters">Clear All</button>
+              <div class="filters-header-actions">
+                <button class="clear-filters-btn" id="btn-clear-filters">Clear All</button>
+                <button class="close-filters-btn" id="btn-close-filters" aria-label="Close Filters">
+                  <i data-lucide="x"></i>
+                </button>
+              </div>
             </div>
             
             <div class="filters-body-wrapper" id="filters-body-wrapper">
@@ -1389,19 +1392,18 @@ class ECommerceApp {
                 </div>
               </div>
 
-              <!-- Price Filter -->
+              <!-- Price Limit Filter -->
               <div class="filter-group">
                 <h4 class="filter-group-title">Price Limit</h4>
-                <div class="price-range-wrapper">
-                  <input type="range" id="filter-price-slider" class="price-slider-input" min="0" max="150000" step="5000" value="150000">
-                  <div class="price-range-values">
-                    <span>₹0</span>
-                    <span id="price-slider-value">Max: ₹1,50,000</span>
+                <div class="price-slider-wrap">
+                  <input type="range" id="filter-price-range" min="0" max="150000" step="1000" value="150000" class="range-slider">
+                  <div class="price-val-display">
+                    Max: <strong id="filter-price-val">₹1,50,000</strong>
                   </div>
                 </div>
               </div>
 
-              <!-- Availability Filter -->
+              <!-- Availability -->
               <div class="filter-group">
                 <h4 class="filter-group-title">Availability</h4>
                 <div class="filter-options">
@@ -1412,14 +1414,24 @@ class ECommerceApp {
                   </label>
                 </div>
               </div>
+              
+              <div class="mobile-filter-actions">
+                <button type="button" class="btn btn-gold btn-block" id="btn-apply-filters-mobile" style="width:100%;">APPLY FILTERS</button>
+              </div>
             </div>
           </aside>
 
           <!-- Catalog Main Column -->
           <div>
             <div class="catalog-header">
-              <div class="results-count" id="catalog-results-count">
-                Showing all <strong>${this.products.length}</strong> luxury articles
+              <div class="catalog-header-top-row">
+                <div class="results-count" id="catalog-results-count">
+                  Showing all <strong>${this.products.length}</strong> luxury articles
+                </div>
+                <button type="button" class="mobile-filter-open-btn" id="btn-open-mobile-filters">
+                  <i data-lucide="sliders-horizontal"></i>
+                  <span>Filter Selection</span>
+                </button>
               </div>
               
               <div class="sort-select-wrapper">
@@ -1457,21 +1469,47 @@ class ECommerceApp {
     const countEl = document.getElementById("catalog-results-count");
 
     const categoryCheckboxes = document.querySelectorAll('input[name="f-category"]');
-    const priceSlider = document.getElementById("filter-price-slider");
-    const priceLabel = document.getElementById("price-slider-value");
+    const priceSlider = document.getElementById("filter-price-slider") || document.getElementById("filter-price-range");
+    const priceLabel = document.getElementById("price-slider-value") || document.getElementById("filter-price-val");
     const stockCheckbox = document.getElementById("filter-stock-only");
     const sortSelect = document.getElementById("catalog-sort");
     const clearBtn = document.getElementById("btn-clear-filters");
 
-    // Collapsible Mobile Filter Sidebar Listener
-    const filterHeader = document.getElementById("filters-header-toggle");
+    // Collapsible Mobile Filter Sidepanel Listener
     const filterSidebar = document.getElementById("catalog-filters-sidebar");
-    if (filterHeader && filterSidebar) {
+    const filterHeader = document.getElementById("filters-header-toggle");
+    const filterOverlay = document.getElementById("filter-drawer-overlay");
+    const closeFilterBtn = document.getElementById("btn-close-filters");
+    const applyFilterBtn = document.getElementById("btn-apply-filters-mobile");
+
+    const openFilters = () => {
+      if (window.innerWidth <= 768) {
+        if (filterSidebar) filterSidebar.classList.add("active");
+        if (filterOverlay) filterOverlay.classList.add("active");
+        document.body.style.overflow = "hidden";
+      }
+    };
+
+    const closeFilters = () => {
+      if (filterSidebar) filterSidebar.classList.remove("active");
+      if (filterOverlay) filterOverlay.classList.remove("active");
+      document.body.style.overflow = "";
+    };
+
+    if (filterHeader) {
       filterHeader.addEventListener("click", (e) => {
-        if (e.target.closest("#btn-clear-filters")) return;
-        filterSidebar.classList.toggle("collapsed");
+        if (e.target.closest("#btn-clear-filters") || e.target.closest("#btn-close-filters")) return;
+        if (window.innerWidth <= 768) {
+          openFilters();
+        }
       });
     }
+
+    if (closeFilterBtn) closeFilterBtn.addEventListener("click", closeFilters);
+    if (filterOverlay) filterOverlay.addEventListener("click", closeFilters);
+    if (applyFilterBtn) applyFilterBtn.addEventListener("click", closeFilters);
+    const openMobileFilterBtn = document.getElementById("btn-open-mobile-filters");
+    if (openMobileFilterBtn) openMobileFilterBtn.addEventListener("click", openFilters);
 
     // Local filter state
     const filterState = {
@@ -1544,42 +1582,50 @@ class ECommerceApp {
       });
     });
 
-    priceSlider.addEventListener("input", (e) => {
-      let val = parseInt(e.target.value);
-      priceLabel.textContent = `Max: ${window.GalaxyUtils.formatCurrency(val)}`;
-    });
+    if (priceSlider) {
+      priceSlider.addEventListener("input", (e) => {
+        let val = parseInt(e.target.value);
+        if (priceLabel) priceLabel.textContent = `Max: ${window.GalaxyUtils ? window.GalaxyUtils.formatCurrency(val) : '₹' + val.toLocaleString('en-IN')}`;
+      });
 
-    priceSlider.addEventListener("change", (e) => {
-      let val = parseInt(e.target.value);
-      filterState.maxPrice = val;
-      applyFiltersAndRender();
-    });
+      priceSlider.addEventListener("change", (e) => {
+        let val = parseInt(e.target.value);
+        filterState.maxPrice = val;
+        applyFiltersAndRender();
+      });
+    }
 
-    stockCheckbox.addEventListener("change", (e) => {
-      filterState.stockOnly = e.target.checked;
-      applyFiltersAndRender();
-    });
+    if (stockCheckbox) {
+      stockCheckbox.addEventListener("change", (e) => {
+        filterState.stockOnly = e.target.checked;
+        applyFiltersAndRender();
+      });
+    }
 
-    sortSelect.addEventListener("change", (e) => {
-      filterState.sortBy = e.target.value;
-      applyFiltersAndRender();
-    });
+    if (sortSelect) {
+      sortSelect.addEventListener("change", (e) => {
+        filterState.sortBy = e.target.value;
+        applyFiltersAndRender();
+      });
+    }
 
-    clearBtn.addEventListener("click", () => {
-      categoryCheckboxes.forEach(c => c.checked = false);
-      priceSlider.value = 150000;
-      priceLabel.textContent = "Max: ₹1,50,000";
-      stockCheckbox.checked = false;
-      sortSelect.value = "latest";
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        categoryCheckboxes.forEach(c => c.checked = false);
+        if (priceSlider) priceSlider.value = 150000;
+        if (priceLabel) priceLabel.textContent = "Max: ₹1,50,000";
+        if (stockCheckbox) stockCheckbox.checked = false;
+        if (sortSelect) sortSelect.value = "latest";
 
-      filterState.categories = [];
-      filterState.maxPrice = 150000;
-      filterState.stockOnly = false;
-      filterState.sortBy = "latest";
-      filterState.search = "";
+        filterState.categories = [];
+        filterState.maxPrice = 150000;
+        filterState.stockOnly = false;
+        filterState.sortBy = "latest";
+        filterState.search = "";
 
-      applyFiltersAndRender();
-    });
+        applyFiltersAndRender();
+      });
+    }
 
     // Run first render
     applyFiltersAndRender();
