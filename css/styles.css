@@ -552,10 +552,16 @@ ol {
 .logo-vector-text .brand-title {
   font-family: var(--font-serif);
   font-size: 1.45rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-secondary);
-  letter-spacing: 0.05em;
-  text-transform: capitalize;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.logo-vector-text .brand-title-accent {
+  color: var(--color-accent);
+  font-weight: 700;
+  margin-left: 2px;
 }
 
 .logo-vector-text .brand-divider {
@@ -3468,12 +3474,33 @@ textarea.form-control {
   }
 
   .logo-vector-text {
-    display: none;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    margin-left: 0 !important;
+  }
+
+  .logo-vector-text .brand-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    color: #111111 !important;
+    text-transform: uppercase !important;
+    line-height: 1 !important;
+  }
+
+  .logo-vector-text .brand-title-accent {
+    color: var(--color-accent, #C9A227) !important;
+    font-weight: 700 !important;
+  }
+
+  .logo-vector-text .brand-divider,
+  .logo-vector-text .brand-subtitle {
+    display: none !important;
   }
 
   .logo-hybrid-container {
-    width: 44px;
-    height: 44px;
+    display: none !important;
   }
 
   .footer-grid {
