@@ -38,7 +38,12 @@ window.GalaxyAPI = {
 
       // Synchronize in-memory app state and re-render current view with live DB data
       if (window.GalaxyAppInstance) {
-        if (Array.isArray(products)) window.GalaxyAppInstance.products = products;
+        if (Array.isArray(products)) {
+          window.GalaxyAppInstance.products = products;
+          if (typeof window.GalaxyAppInstance.syncCartWithProducts === 'function') {
+            window.GalaxyAppInstance.syncCartWithProducts();
+          }
+        }
         if (Array.isArray(categories)) window.GalaxyAppInstance.categories = categories;
         if (Array.isArray(reviews)) window.GalaxyAppInstance.reviews = reviews;
         if (Array.isArray(solutions)) window.GalaxyAppInstance.solutions = solutions;

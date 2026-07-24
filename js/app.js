@@ -144,8 +144,28 @@ class ECommerceApp {
     this.initGlobalEvents();
     this.updateBadges();
 
+    // Sync initial cart items with loaded product specs/shipping
+    this.syncCartWithProducts();
+
     // Register SPA Routes with GalaxyRouter
     this.registerRoutes();
+  }
+
+  syncCartWithProducts() {
+    if (!Array.isArray(this.cart) || !Array.isArray(this.products)) return;
+    let changed = false;
+    this.cart.forEach(item => {
+      if (item && item.product && item.product.id) {
+        const fresh = this.products.find(p => p.id === item.product.id);
+        if (fresh) {
+          item.product = { ...fresh };
+          changed = true;
+        }
+      }
+    });
+    if (changed) {
+      localStorage.setItem("gd_cart", JSON.stringify(this.cart));
+    }
   }
 
   updateStoreConfig() {
@@ -2023,37 +2043,55 @@ class ECommerceApp {
       return;
     }
 
-    let subtotal = this.cart.reduce((sum, item) => sum + ((item.product.offerPrice || item.product.price) * item.quantity), 0);
-    let totalShipping = this.cart.reduce((sum, item) => sum + ((Number(item.product.shipping) || 0) * item.quantity), 0);
+    this.syncCartWithProducts();
+
     let discountAmt = 0;
     let discountPercent = 0;
     let appliedPromoStr = "";
 
-    // We will inject a dynamic render function for the summary section
+    // Dynamic summary calculation
+    let getTotals = () => {
+      let subtotal = this.cart.reduce((sum, item) => {
+        const unitPrice = (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price);
+        return sum + (unitPrice * item.quantity);
+      }, 0);
+      let totalShipping = this.cart.reduce((sum, item) => sum + ((Number(item.product.shipping) || 0) * item.quantity), 0);
+      let total = Math.max(0, subtotal - discountAmt + totalShipping);
+      return { subtotal, totalShipping, total };
+    };
+
     let renderSummary = () => {
-      let total = subtotal - discountAmt + totalShipping;
+      const { subtotal, totalShipping, total } = getTotals();
 
-
-      document.getElementById("checkout-subtotal-val").textContent = window.GalaxyUtils.formatCurrency(subtotal);
+      const subEl = document.getElementById("checkout-subtotal-val");
+      if (subEl) subEl.textContent = window.GalaxyUtils.formatCurrency(subtotal);
 
       let shipEl = document.getElementById("checkout-shipping-val");
-      shipEl.textContent = totalShipping > 0 ? window.GalaxyUtils.formatCurrency(totalShipping) : "FREE";
-      shipEl.style.color = totalShipping > 0 ? "inherit" : "var(--color-success)";
+      if (shipEl) {
+        shipEl.textContent = totalShipping > 0 ? window.GalaxyUtils.formatCurrency(totalShipping) : "FREE";
+        shipEl.style.color = totalShipping > 0 ? "inherit" : "var(--color-success)";
+      }
 
       let discEl = document.getElementById("checkout-discount-row");
-      if (discountAmt > 0) {
-        discEl.style.display = "table-row";
-        document.getElementById("checkout-discount-val").textContent = "-" + window.GalaxyUtils.formatCurrency(discountAmt);
-      } else {
-        discEl.style.display = "none";
+      if (discEl) {
+        if (discountAmt > 0) {
+          discEl.style.display = "table-row";
+          document.getElementById("checkout-discount-val").textContent = "-" + window.GalaxyUtils.formatCurrency(discountAmt);
+        } else {
+          discEl.style.display = "none";
+        }
       }
-      document.getElementById("checkout-grandtotal-val").innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
+
+      const grandEl = document.getElementById("checkout-grandtotal-val");
+      if (grandEl) grandEl.innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
 
       const submitBtn = document.querySelector('#checkout-form button[type="submit"]');
       if (submitBtn) {
         submitBtn.textContent = `Confirm Order (${window.GalaxyUtils.formatCurrency(total)})`;
       }
     };
+
+    const initialSubtotal = getTotals().subtotal;
 
     this.appRoot.innerHTML = `
       <section class="py-section container fade-in">
@@ -2116,7 +2154,7 @@ class ECommerceApp {
               </label>
             </div>
 
-            <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top: var(--spacing-lg);">Confirm Order (₹${subtotal.toLocaleString()})</button>
+            <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top: var(--spacing-lg);">Confirm Order</button>
           </form>
 
           <!-- Order Summary Card -->
@@ -2124,12 +2162,15 @@ class ECommerceApp {
             <h3 style="border-bottom: 1px solid var(--color-border); padding-bottom:5px;">Order Summary</h3>
             
             <div class="checkout-items-list">
-              ${this.cart.map(item => `
-                <div class="checkout-item-row">
-                  <span class="checkout-item-name">${item.product.name} (x${item.quantity})</span>
-                  <span class="checkout-item-price">${window.GalaxyUtils.formatCurrency((item.product.offerPrice || item.product.price) * item.quantity)}</span>
-                </div>
-              `).join("")}
+              ${this.cart.map(item => {
+                const unitPrice = (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price);
+                return `
+                  <div class="checkout-item-row">
+                    <span class="checkout-item-name">${item.product.name} (x${item.quantity})</span>
+                    <span class="checkout-item-price">${window.GalaxyUtils.formatCurrency(unitPrice * item.quantity)}</span>
+                  </div>
+                `;
+              }).join("")}
             </div>
 
             <form id="checkout-coupon-form" style="display:flex; gap:0.5rem; margin-bottom: 1.5rem; margin-top: 1rem;">
