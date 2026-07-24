@@ -1376,6 +1376,7 @@
                     <th>Category</th>
                     <th>Original Price</th>
                     <th>Offer Price</th>
+                    <th>Shipping Surcharge</th>
                     <th>Stock Status</th>
                     <th style="text-align:right;">Actions</th>
                   </tr>
@@ -2586,7 +2587,7 @@
       });
 
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#999;">No matching luxury pieces.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">No matching luxury pieces.</td></tr>';
         return;
       }
 
@@ -2597,6 +2598,7 @@
           <td><span style="background-color:#eee; padding:0.15rem 0.4rem; border-radius:4px; font-size:0.75rem;">${getCategoryName(item.p.category)}</span></td>
           <td>₹${item.p.price.toLocaleString()}</td>
           <td>${item.p.offerPrice ? `<strong style="color:var(--color-accent);">₹${item.p.offerPrice.toLocaleString()}</strong>` : '<span style="color:#aaa;">-</span>'}</td>
+          <td>${item.p.shipping ? `<span style="font-weight:600;">₹${Number(item.p.shipping).toLocaleString()}</span>` : '<span style="color:var(--color-success); font-weight:500;">Free</span>'}</td>
           <td><span style="font-weight:600; color:${item.p.inStock ? "var(--color-success)" : "var(--color-error)"}">${item.p.inStock ? (item.p.stockCount !== undefined ? item.p.stockCount + " in Stock" : "In Stock") : "Out of Stock"}</span></td>
           <td style="text-align:right;">
             <div style="display: flex; gap: 8px; justify-content: flex-end;">

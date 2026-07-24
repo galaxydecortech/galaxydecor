@@ -1728,7 +1728,7 @@ class ECommerceApp {
       "Dimensions": "Standard Showroom Fit",
       "Upholstery": "Premium Fabric Sourcing",
       "Warranty": "1 Year Manufacturer Defect Sourcing Warranty",
-      "Shipping": "Safe local Erode shipping and expert assembly included"
+      "Shipping": product.shipping > 0 ? "+ " + window.GalaxyUtils.formatCurrency(product.shipping) + " Shipping Surcharge" : "Safe local Erode shipping and expert assembly included"
     }).map(([lbl, val]) => `
                     <tr>
                       <td class="specs-label">${lbl}</td>
@@ -1999,15 +1999,14 @@ class ECommerceApp {
     const shippingEl = document.getElementById("cart-page-shipping");
     const grandEl = document.getElementById("cart-page-grandtotal");
 
+    let totalShipping = this.cart.reduce((sum, item) => sum + ((Number(item.product.shipping) || 0) * item.quantity), 0);
+
     if (subEl) subEl.textContent = window.GalaxyUtils.formatCurrency(subtotal);
     if (shippingEl) {
-      // For cart page, let's assume standard shipping logic (e.g. free over 100000, else 2000 per item)
-      let totalShipping = this.cart.reduce((sum, item) => sum + ((item.product.shipping || 0) * item.quantity), 0);
       shippingEl.textContent = totalShipping > 0 ? window.GalaxyUtils.formatCurrency(totalShipping) : "FREE";
       shippingEl.style.color = totalShipping > 0 ? "inherit" : "var(--color-success)";
     }
     if (grandEl) {
-      let totalShipping = this.cart.reduce((sum, item) => sum + ((item.product.shipping || 0) * item.quantity), 0);
       let total = subtotal - (subtotal * (discountPercent / 100)) + totalShipping;
       grandEl.innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
     }
@@ -2025,7 +2024,7 @@ class ECommerceApp {
     }
 
     let subtotal = this.cart.reduce((sum, item) => sum + ((item.product.offerPrice || item.product.price) * item.quantity), 0);
-    let totalShipping = this.cart.reduce((sum, item) => sum + ((item.product.shipping || 0) * item.quantity), 0);
+    let totalShipping = this.cart.reduce((sum, item) => sum + ((Number(item.product.shipping) || 0) * item.quantity), 0);
     let discountAmt = 0;
     let discountPercent = 0;
     let appliedPromoStr = "";
@@ -2049,6 +2048,11 @@ class ECommerceApp {
         discEl.style.display = "none";
       }
       document.getElementById("checkout-grandtotal-val").innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
+
+      const submitBtn = document.querySelector('#checkout-form button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.textContent = `Confirm Order (${window.GalaxyUtils.formatCurrency(total)})`;
+      }
     };
 
     this.appRoot.innerHTML = `

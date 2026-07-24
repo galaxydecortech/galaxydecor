@@ -161,6 +161,7 @@ app.get('/api/products', async (req, res) => {
     if (error) throw error;
     const products = (data || []).map(row => ({
       ...row,
+      shipping: Number(row.shipping) || 0,
       gallery: typeof row.gallery === 'string' ? JSON.parse(row.gallery || '[]') : (row.gallery || []),
       specs: typeof row.specs === 'string' ? JSON.parse(row.specs || '{}') : (row.specs || {}),
       isNew: Boolean(row.isNew),
@@ -184,6 +185,7 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
       desc: p.desc || '',
       price: Number(p.price) || 0,
       offerPrice: Number(p.offerPrice) || 0,
+      shipping: Number(p.shipping) || 0,
       image: p.image || '',
       gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
@@ -208,6 +210,7 @@ app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
       desc: p.desc || '',
       price: Number(p.price) || 0,
       offerPrice: Number(p.offerPrice) || 0,
+      shipping: Number(p.shipping) || 0,
       image: p.image || '',
       gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
@@ -463,7 +466,7 @@ app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res
       const itemIds = items.map(i => i.id).filter(Boolean);
       
       if (itemIds.length > 0) {
-        const { data: dbProducts } = await supabase.from('products').select('id, price, offerPrice').in('id', itemIds);
+        const { data: dbProducts } = await supabase.from('products').select('id, price, offerPrice, shipping').in('id', itemIds);
 
         const prodMap = {};
         (dbProducts || []).forEach(p => { prodMap[p.id] = p; });
@@ -476,7 +479,8 @@ app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res
           const dbProd = prodMap[item.id];
           const unitPrice = dbProd ? (dbProd.offerPrice > 0 ? dbProd.offerPrice : dbProd.price) : (item.price || 0);
           calculatedSubtotal += unitPrice * qty;
-          totalShipping += (item.shipping || 0);
+          const unitShipping = dbProd && dbProd.shipping !== undefined ? Number(dbProd.shipping) : (Number(item.shipping) || 0);
+          totalShipping += unitShipping * qty;
         });
 
         let promoDiscount = 0;

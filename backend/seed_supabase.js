@@ -54,6 +54,7 @@ async function seedSupabase() {
         desc: p.desc,
         price: p.price,
         offerPrice: p.offerPrice || 0,
+        shipping: Number(p.shipping) || 0,
         image: p.image,
         gallery: p.gallery || [],
         isNew: Boolean(p.isNew),
