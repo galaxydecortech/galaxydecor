@@ -1121,7 +1121,12 @@
         </div>
         <div class="form-group">
           <label for="password">Password</label>
-          <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="password" id="password" class="form-control" placeholder="••••••••" required autocomplete="current-password" style="padding-right: 42px; width: 100%;">
+            <button type="button" id="toggle-password-btn" onclick="window.togglePasswordVisibility()" style="position: absolute; right: 12px; background: none; border: none; color: var(--color-secondary-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;" title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
+              <i data-lucide="eye" id="toggle-password-icon" style="width: 18px; height: 18px;"></i>
+            </button>
+          </div>
         </div>
         <button type="button" onclick="window.handleAdminLogin(event)" class="btn btn-gold btn-block" style="width:100%; margin-top:1.5rem;">Access Dashboard</button>
       </form>
@@ -1826,6 +1831,21 @@
   <script src="/js/data.js"></script>
   <script src="/js/api.js"></script>
   <script>
+    // Password Visibility Toggle Function
+    window.togglePasswordVisibility = function() {
+      const pwdInput = document.getElementById("password");
+      const icon = document.getElementById("toggle-password-icon");
+      if (!pwdInput) return;
+      if (pwdInput.type === "password") {
+        pwdInput.type = "text";
+        if (icon) icon.setAttribute("data-lucide", "eye-off");
+      } else {
+        pwdInput.type = "password";
+        if (icon) icon.setAttribute("data-lucide", "eye");
+      }
+      if (window.lucide) window.lucide.createIcons();
+    };
+
     // 1. Initial State Fallback Setup
     const defaultCoupons = [
       { code: "WELCOME10", discount: 10 }
