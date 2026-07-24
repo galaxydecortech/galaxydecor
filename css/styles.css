@@ -1530,23 +1530,23 @@ ol {
   display: inline-flex;
   align-items: center;
   background: transparent;
-  color: #B8860B;
+  color: #111111;
   padding: 0.95rem 1.9rem;
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 2px solid #B8860B;
+  border: 2px solid #111111;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
 }
 
 .btn-hero-outline:hover {
-  background: #B8860B;
+  background: #111111;
   color: #ffffff;
-  border-color: #B8860B;
+  border-color: #111111;
 }
 
 /* Bottom slider dots */
