@@ -13,7 +13,6 @@ window.GalaxyAPI = {
   
   async fetchAllData() {
     try {
-      console.log("Fetching live data from Backend API...");
       const [productsRes, categoriesRes, reviewsRes, storeRes, solutionsRes] = await Promise.all([
         fetch(`${API_BASE}/products`),
         fetch(`${API_BASE}/categories`),
@@ -41,7 +40,6 @@ window.GalaxyAPI = {
         window.GalaxyAppInstance.updateStoreConfig();
       }
 
-      console.log("Backend sync successful!");
       return true;
     } catch (error) {
       console.warn("Backend API is offline. Falling back to LocalStorage data.", error);

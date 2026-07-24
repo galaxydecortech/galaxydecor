@@ -2999,16 +2999,18 @@ input[type="range"]::-moz-range-thumb {
 
 .cart-summary-card {
   border: 1px solid var(--color-border);
-  padding: var(--spacing-xl);
-  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
   background-color: var(--color-primary-soft);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
 }
 
 .cart-summary-card h3 {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: var(--spacing-lg);
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
   color: var(--color-secondary);
   border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--spacing-sm);
@@ -3016,19 +3018,36 @@ input[type="range"]::-moz-range-thumb {
 
 .summary-table {
   width: 100%;
-  margin-bottom: var(--spacing-xl);
+  border-collapse: collapse;
+  margin-bottom: var(--spacing-lg);
+  box-sizing: border-box;
 }
 
 .summary-table td {
-  padding: var(--spacing-sm) 0;
-  font-size: 0.9rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.92rem;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.summary-table td:first-child {
+  padding-left: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.summary-table td:last-child {
+  padding-right: 0.75rem;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .summary-table tr.total-row td {
   border-top: 1px solid var(--color-border);
-  padding-top: var(--spacing-md);
+  padding-top: 1rem;
+  padding-bottom: 0.85rem;
   font-family: var(--font-serif);
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 600;
   color: var(--color-secondary);
 }
@@ -3041,6 +3060,7 @@ input[type="range"]::-moz-range-thumb {
   text-align: right;
   font-weight: 500;
   color: var(--color-secondary-soft);
+  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -6798,6 +6818,19 @@ section .btn-black[href="#/contact"] {
   .summary-table {
     font-size: 0.85rem;
     width: 100%;
+    box-sizing: border-box;
+  }
+
+  .summary-table td {
+    padding: 0.65rem 0.6rem !important;
+  }
+
+  .summary-table td:first-child {
+    padding-left: 0.6rem !important;
+  }
+
+  .summary-table td:last-child {
+    padding-right: 0.6rem !important;
   }
 
   #checkout-coupon-form {

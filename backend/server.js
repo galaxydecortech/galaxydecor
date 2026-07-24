@@ -51,11 +51,18 @@ app.use(express.static(path.join(__dirname, '..')));
 // ----------------------------------------------------
 // Admin Authentication & Authorization Middleware
 // ----------------------------------------------------
-const ADMIN_USER = String(process.env.ADMIN_USERNAME || 'admin').trim();
-const ADMIN_PASS = String(process.env.ADMIN_PASSWORD || 'galaxy123').trim();
-const ADMIN_TOKEN = String(process.env.ADMIN_TOKEN || 'gd_sec_token_98471205918237').trim();
+const ADMIN_USER = process.env.ADMIN_USERNAME ? String(process.env.ADMIN_USERNAME).trim() : null;
+const ADMIN_PASS = process.env.ADMIN_PASSWORD ? String(process.env.ADMIN_PASSWORD).trim() : null;
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN ? String(process.env.ADMIN_TOKEN).trim() : null;
+
+if (!ADMIN_USER || !ADMIN_PASS || !ADMIN_TOKEN) {
+  console.warn('WARNING: Admin credentials not fully configured in .env — admin routes are disabled.');
+}
 
 app.post('/api/admin/login', (req, res) => {
+  if (!ADMIN_USER || !ADMIN_PASS || !ADMIN_TOKEN) {
+    return res.status(503).json({ error: 'Admin authentication is not configured on the server.' });
+  }
   const { username, password } = req.body || {};
   const cleanUser = String(username || '').trim().toLowerCase();
   const cleanPass = String(password || '').trim();

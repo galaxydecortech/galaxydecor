@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <!-- Lucide Icons CDN -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/lucide@0.460.0"></script>
   <style>
     /* --- CSS Variables & Design Tokens --- */
     :root {
@@ -1923,58 +1923,48 @@
     // 2. Auth Actions (Global Function for fail-proof inline/event binding)
     window.handleAdminLogin = async function(e) {
       if (e && e.preventDefault) e.preventDefault();
-      console.log("👉 [ADMIN LOGIN] Form submit / button click triggered!");
 
       const userEl = document.getElementById("username");
       const passEl = document.getElementById("password");
       const errorEl = document.getElementById("login-error-alert");
 
       if (!userEl || !passEl) {
-        console.error("❌ [ADMIN LOGIN] Missing username or password element in DOM!");
         return false;
       }
 
       const user = userEl.value.trim().toLowerCase();
       const pass = passEl.value.trim();
 
-      console.log("👉 [ADMIN LOGIN] Sanitized credentials -> User:", user, "| Pass length:", pass.length);
-
       let loginSuccessful = false;
 
-      // Attempt live backend API authentication first
+      // Authenticate via backend API only
       if (window.GalaxyAPI && typeof window.GalaxyAPI.loginAdmin === 'function') {
         try {
-          console.log("👉 [ADMIN LOGIN] Sending authentication request to backend API...");
           const result = await window.GalaxyAPI.loginAdmin(user, pass);
-          console.log("👉 [ADMIN LOGIN] Backend API authentication response:", result);
           if (result && result.success) {
             loginSuccessful = true;
           }
         } catch (err) {
-          console.warn("⚠️ [ADMIN LOGIN] Backend login attempt warning:", err);
+          // Backend unreachable
+          if (errorEl) {
+            errorEl.style.display = "block";
+            errorEl.textContent = "Server is currently unavailable. Please try again later.";
+          }
+          return false;
         }
-      }
-
-      // Fallback local verification if backend API is unreachable or offline
-      if (!loginSuccessful) {
-        console.log("👉 [ADMIN LOGIN] Checking local fallback credentials...");
-        if (user === "admin" && pass === "galaxy123") {
-          console.log("✅ [ADMIN LOGIN] Local fallback credentials matched!");
-          sessionStorage.setItem("gd_admin_token", "gd_sec_token_98471205918237");
-          sessionStorage.setItem("gd_admin_logged_in", "true");
-          loginSuccessful = true;
-        } else {
-          console.error("❌ [ADMIN LOGIN] Invalid credentials entered:", user);
+      } else {
+        if (errorEl) {
+          errorEl.style.display = "block";
+          errorEl.textContent = "Server is currently unavailable. Please try again later.";
         }
+        return false;
       }
 
       if (loginSuccessful) {
-        console.log("🚀 [ADMIN LOGIN] Login SUCCESSFUL! Opening Admin Dashboard...");
         sessionStorage.setItem("gd_admin_logged_in", "true");
         if (errorEl) errorEl.style.display = "none";
         window.showDashboard();
       } else {
-        console.warn("❌ [ADMIN LOGIN] Rejecting access: Showing error notification.");
         if (errorEl) {
           errorEl.style.display = "block";
           errorEl.textContent = "Invalid Admin Username or Password.";
