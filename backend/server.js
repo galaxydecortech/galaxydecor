@@ -174,21 +174,21 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', requireAdminAuth, async (req, res) => {
   try {
-    const p = req.body;
+    const p = req.body || {};
     const id = p.id || 'p_' + Date.now();
     const productRecord = {
       id,
-      name: p.name,
-      category: p.category,
-      shortDesc: p.shortDesc,
-      desc: p.desc,
-      price: p.price,
-      offerPrice: p.offerPrice,
-      image: p.image,
-      gallery: p.gallery || [],
+      name: p.name || 'Untitled Product',
+      category: p.category || 'General',
+      shortDesc: p.shortDesc || '',
+      desc: p.desc || '',
+      price: Number(p.price) || 0,
+      offerPrice: Number(p.offerPrice) || 0,
+      image: p.image || '',
+      gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
       inStock: Boolean(p.inStock),
-      specs: p.specs || {}
+      specs: typeof p.specs === 'object' && p.specs !== null ? p.specs : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {})
     };
     const { data, error } = await supabase.from('products').upsert([productRecord]).select();
     if (error) throw error;
@@ -200,19 +200,19 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
 
 app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
   try {
-    const p = req.body;
+    const p = req.body || {};
     const updateRecord = {
-      name: p.name,
-      category: p.category,
-      shortDesc: p.shortDesc,
-      desc: p.desc,
-      price: p.price,
-      offerPrice: p.offerPrice,
-      image: p.image,
-      gallery: p.gallery || [],
+      name: p.name || 'Untitled Product',
+      category: p.category || 'General',
+      shortDesc: p.shortDesc || '',
+      desc: p.desc || '',
+      price: Number(p.price) || 0,
+      offerPrice: Number(p.offerPrice) || 0,
+      image: p.image || '',
+      gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
       inStock: Boolean(p.inStock),
-      specs: p.specs || {}
+      specs: typeof p.specs === 'object' && p.specs !== null ? p.specs : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {})
     };
     const { data, error } = await supabase.from('products').update(updateRecord).eq('id', req.params.id).select();
     if (error) throw error;
@@ -372,14 +372,14 @@ app.get('/api/enquiries', requireAdminAuth, async (req, res) => {
 
 app.post('/api/enquiries', async (req, res) => {
   try {
-    const e = req.body;
+    const e = req.body || {};
+    const enquiryMsg = e.message ? e.message : (e.interest ? `Interest: ${e.interest}` : '');
     const enquiryRecord = {
       id: e.id || 'ENQ-' + Date.now(),
       name: e.name || 'Visitor',
       email: e.email || '',
       phone: e.phone || '',
-      interest: e.interest || 'General',
-      message: e.message || '',
+      message: enquiryMsg,
       status: e.status || 'New'
     };
     const { data, error } = await supabase.from('enquiries').insert([enquiryRecord]).select();

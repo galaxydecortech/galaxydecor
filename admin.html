@@ -1942,6 +1942,9 @@
         try {
           const result = await window.GalaxyAPI.loginAdmin(user, pass);
           if (result && result.success) {
+            if (result.token) {
+              sessionStorage.setItem("gd_admin_token", result.token);
+            }
             loginSuccessful = true;
           }
         } catch (err) {

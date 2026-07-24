@@ -2274,12 +2274,26 @@ class ECommerceApp {
               })
             });
 
-            if (!createOrderResponse.ok) {
-              const errorData = await createOrderResponse.json();
-              throw new Error(errorData.error || 'Failed to create payment order.');
+            let errorMsg = 'Failed to start online payment order.';
+            let razorpayOrder = null;
+
+            try {
+              const resText = await createOrderResponse.text();
+              const parsed = JSON.parse(resText);
+              if (parsed && parsed.error) {
+                errorMsg = parsed.error;
+              } else {
+                razorpayOrder = parsed;
+              }
+            } catch (parseErr) {
+              if (!createOrderResponse.ok) {
+                errorMsg = 'Online payments are not configured on Vercel yet. Please add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel Project Settings -> Environment Variables, or use Cash on Delivery.';
+              }
             }
 
-            const razorpayOrder = await createOrderResponse.json();
+            if (!createOrderResponse.ok || !razorpayOrder) {
+              throw new Error(errorMsg);
+            }
 
             // Step 2: Open Razorpay Checkout with the server-created order
             const rzpOptions = {
@@ -2304,7 +2318,13 @@ class ECommerceApp {
                     })
                   });
 
-                  const verifyResult = await verifyResponse.json();
+                  let verifyResult = {};
+                  try {
+                    const vText = await verifyResponse.text();
+                    verifyResult = JSON.parse(vText);
+                  } catch (e) {
+                    verifyResult = {};
+                  }
 
                   if (verifyResponse.ok && verifyResult.verified) {
                     // Step 4: Payment verified — finalize the order
