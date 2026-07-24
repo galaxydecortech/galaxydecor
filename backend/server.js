@@ -1,9 +1,9 @@
+const path = require('path');
 // Load environment variables from .env file (must be first)
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
@@ -433,7 +433,7 @@ app.get('/api/coupons', requireAdminAuth, async (req, res) => {
 // ----------------------------------------------------
 
 // 9a. Return the Razorpay public key to the frontend
-app.get('/api/payment/key', (req, res) => {
+app.get(['/api/payment/key', '/payment/key'], (req, res) => {
   if (!razorpayInstance) {
     return res.status(503).json({
       error: 'Online payments are not configured. Please add Razorpay API keys in backend/.env'
@@ -443,7 +443,7 @@ app.get('/api/payment/key', (req, res) => {
 });
 
 // 9b. Create a Razorpay Order (Server-verified prices via Supabase)
-app.post('/api/payment/create-order', async (req, res) => {
+app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res) => {
   if (!razorpayInstance) {
     return res.status(503).json({
       error: 'Online payments are not configured. Please add Razorpay API keys in backend/.env'
@@ -532,7 +532,7 @@ app.post('/api/payment/create-order', async (req, res) => {
 });
 
 // 9c. Verify payment signature after successful payment
-app.post('/api/payment/verify', async (req, res) => {
+app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
   if (!razorpayInstance) {
     return res.status(503).json({
       error: 'Online payments are not configured. Please add Razorpay API keys in backend/.env'

@@ -1,0 +1,17 @@
+{
+  "name": "galaxy-decor",
+  "version": "1.0.0",
+  "description": "Galaxy Decor - Luxury Furniture & Interior Solutions E-Commerce",
+  "main": "api/index.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.8",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "razorpay": "^2.9.8"
+  }
+}
