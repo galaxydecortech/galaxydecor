@@ -2147,7 +2147,7 @@ class ECommerceApp {
               </div>
               <div class="form-group">
                 <label for="ch-phone">Phone Number</label>
-                <input type="tel" id="ch-phone" class="form-control" placeholder="8608738393" required maxlength="10" minlength="10" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                <input type="tel" id="ch-phone" class="form-control" placeholder="8608738393" required>
               </div>
               <div class="form-group">
                 <label for="ch-email">Email Address</label>
@@ -2200,10 +2200,10 @@ class ECommerceApp {
             <table class="summary-table" style="margin-bottom: 0;">
               <tbody>
                 <tr>
-                  <td class="summary-label">Items Total</td>
-                  <td class="summary-value" id="checkout-subtotal-val"></td>
+                  <td class="summary-label">Subtotal</td>
+                  <td class="summary-value" id="checkout-subtotal-val">${window.GalaxyUtils.formatCurrency(initialSubtotal)}</td>
                 </tr>
-                <tr id="checkout-discount-row" style="display:none; color: var(--color-gold);">
+                <tr id="checkout-discount-row" style="display:none; color:var(--color-success);">
                   <td class="summary-label">Promo Discount</td>
                   <td class="summary-value" id="checkout-discount-val"></td>
                 </tr>
@@ -2295,25 +2295,28 @@ class ECommerceApp {
           }
         }
 
-        let payMethod = chForm.querySelector('input[name="pay-method"]:checked').value;
+        const checkedPayMethod = chForm.querySelector('input[name="pay-method"]:checked');
+        const payMethod = checkedPayMethod ? checkedPayMethod.value : "COD";
+        const currentTotals = getTotals();
+
         let orderDetails = {
           orderId: "GD-" + Math.floor(100000 + Math.random() * 900000),
-          name: document.getElementById("ch-fname").value + " " + document.getElementById("ch-lname").value,
+          name: document.getElementById("ch-fname").value.trim() + " " + document.getElementById("ch-lname").value.trim(),
           phone: phoneVal,
-          email: document.getElementById("ch-email").value,
-          address: document.getElementById("ch-address").value + ", " + document.getElementById("ch-city").value + " - " + document.getElementById("ch-pincode").value,
+          email: document.getElementById("ch-email").value.trim(),
+          address: document.getElementById("ch-address").value.trim() + ", " + document.getElementById("ch-city").value.trim() + " - " + document.getElementById("ch-pincode").value.trim(),
           items: this.cart.map(item => ({
             id: item.product.id,
             name: item.product.name,
             quantity: item.quantity,
-            price: item.product.offerPrice || item.product.price,
-            shipping: item.product.shipping || 0
+            price: (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price),
+            shipping: Number(item.product.shipping) || 0
           })),
-          subtotal: subtotal,
-          totalShipping: totalShipping,
+          subtotal: currentTotals.subtotal,
+          totalShipping: currentTotals.totalShipping,
           promoDiscount: discountAmt,
           appliedPromo: appliedPromoStr,
-          total: (subtotal - discountAmt + totalShipping),
+          total: currentTotals.total,
           payment: payMethod,
           paymentStatus: payMethod === "COD" ? "Pending" : "Paid",
           orderStatus: "New",
@@ -2441,11 +2444,31 @@ class ECommerceApp {
                 "color": "#C9A227"
               },
               "prefill": {
-                "name": orderDetails.name,
-                "email": orderDetails.email,
-                "contact": orderDetails.phone
+                "name": orderDetails.name || "",
+                "email": orderDetails.email || "",
+                "contact": (orderDetails.phone || "").replace(/[^0-9]/g, "").slice(-10)
+              },
+              "config": {
+                "display": {
+                  "blocks": {
+                    "upi": {
+                      "name": "Pay via UPI QR",
+                      "instruments": [
+                        {
+                          "method": "upi",
+                          "flows": ["qr", "intent"]
+                        }
+                      ]
+                    }
+                  },
+                  "sequence": ["block.upi"],
+                  "preferences": {
+                    "show_default_blocks": true
+                  }
+                }
               }
             };
+
 
             const rzp = new Razorpay(rzpOptions);
             rzp.open();
