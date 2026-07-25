@@ -151,22 +151,65 @@ class ECommerceApp {
     this.registerRoutes();
   }
 
+  isOutOfStock(p) {
+    if (!p) return true;
+    if (p.inStock === false) return true;
+    const count = (p.stockCount !== undefined && p.stockCount !== null)
+      ? Number(p.stockCount)
+      : ((p.specs && p.specs.stockCount !== undefined) ? Number(p.specs.stockCount) : null);
+    if (count !== null && count <= 0) return true;
+    return false;
+  }
+
+  getAvailableStock(p) {
+    if (!p || this.isOutOfStock(p)) return 0;
+    const count = (p.stockCount !== undefined && p.stockCount !== null)
+      ? Number(p.stockCount)
+      : ((p.specs && p.specs.stockCount !== undefined) ? Number(p.specs.stockCount) : null);
+    if (count !== null) return Math.max(0, count);
+    return 5;
+  }
+
   syncCartWithProducts() {
     if (!Array.isArray(this.cart) || !Array.isArray(this.products)) return;
     let changed = false;
+    let updatedCart = [];
+
     this.cart.forEach(item => {
       if (item && item.product && item.product.id) {
         const fresh = this.products.find(p => p.id === item.product.id);
         if (fresh) {
           item.product = { ...fresh };
-          changed = true;
+          
+          const isOut = this.isOutOfStock(fresh);
+          const availableStock = this.getAvailableStock(fresh);
+
+          if (isOut || availableStock <= 0) {
+            changed = true;
+            window.GalaxyUtils.showToast(`⚠️ "${fresh.name}" is Out of Stock and was removed from your bag.`, "warning");
+            return;
+          }
+
+          if (item.quantity > availableStock) {
+            item.quantity = availableStock;
+            changed = true;
+            window.GalaxyUtils.showToast(`⚠️ Quantity of "${fresh.name}" was adjusted to available stock limit of ${availableStock} unit(s).`, "warning");
+          }
+
+          updatedCart.push(item);
+        } else {
+          updatedCart.push(item);
         }
       }
     });
+
+    this.cart = updatedCart;
     if (changed) {
       localStorage.setItem("gd_cart", JSON.stringify(this.cart));
+      this.updateBadges();
     }
   }
+
 
   updateStoreConfig() {
     let storedConfig = null;
@@ -237,20 +280,56 @@ class ECommerceApp {
 
   // --- Cart & Wishlist Operations ---
   addToCart(productId, quantity = 1, showFeedback = true) {
+    try {
+      const freshProds = JSON.parse(localStorage.getItem("gd_products"));
+      if (Array.isArray(freshProds) && freshProds.length > 0) {
+        this.products = freshProds;
+      }
+    } catch (e) {}
+
     let product = this.products.find(p => p.id === productId);
-    if (!product) return;
+    if (!product) return false;
+
+    const isOut = this.isOutOfStock(product);
+    const availableStock = this.getAvailableStock(product);
+
+    if (isOut || availableStock <= 0) {
+      window.GalaxyUtils.showToast(`⚠️ Sorry, "${product.name}" is currently Out of Stock!`, "error");
+      return false;
+    }
 
     let existingItem = this.cart.find(item => item.product.id === productId);
+    let currentInCart = existingItem ? existingItem.quantity : 0;
+    let targetQty = currentInCart + quantity;
+
+    if (targetQty > availableStock) {
+      if (currentInCart >= availableStock) {
+        window.GalaxyUtils.showToast(`⚠️ Cannot add more: Maximum stock limit of ${availableStock} unit(s) reached for "${product.name}".`, "warning");
+        return false;
+      } else {
+        let allowedToAdd = availableStock - currentInCart;
+        if (existingItem) {
+          existingItem.quantity = availableStock;
+        } else {
+          this.cart.push({ product, quantity: availableStock });
+        }
+        this.saveCart();
+        window.GalaxyUtils.showToast(`⚠️ Only ${availableStock} unit(s) available in stock for "${product.name}". Added ${allowedToAdd} unit(s) up to stock limit.`, "warning");
+        return true;
+      }
+    }
+
     if (existingItem) {
-      existingItem.quantity += quantity;
+      existingItem.quantity = targetQty;
     } else {
-      this.cart.push({ product, quantity });
+      this.cart.push({ product, quantity: targetQty });
     }
 
     this.saveCart();
     if (showFeedback) {
       window.GalaxyUtils.showToast(`"${product.name}" added to shopping bag.`);
     }
+    return true;
   }
 
   removeFromCart(productId) {
@@ -264,12 +343,41 @@ class ECommerceApp {
       this.removeFromCart(productId);
       return;
     }
+
+    try {
+      const freshProds = JSON.parse(localStorage.getItem("gd_products"));
+      if (Array.isArray(freshProds) && freshProds.length > 0) {
+        this.products = freshProds;
+      }
+    } catch (e) {}
+
     let item = this.cart.find(item => item.product.id === productId);
-    if (item) {
-      item.quantity = newQty;
-      this.saveCart();
+    if (!item) return;
+
+    let product = this.products.find(p => p.id === productId) || item.product;
+    const availableStock = this.getAvailableStock(product);
+    const isOut = this.isOutOfStock(product);
+
+    if (isOut || availableStock <= 0) {
+      this.removeFromCart(productId);
+      window.GalaxyUtils.showToast(`⚠️ "${product.name}" is Out of Stock and was removed from your bag.`, "error");
+      return;
     }
+
+    if (newQty > availableStock) {
+      item.quantity = availableStock;
+      this.saveCart();
+      window.GalaxyUtils.showToast(`⚠️ Cannot exceed available stock limit of ${availableStock} unit(s) for "${product.name}".`, "warning");
+      if (window.location.pathname.startsWith("/cart")) {
+        this.renderCartPage();
+      }
+      return;
+    }
+
+    item.quantity = newQty;
+    this.saveCart();
   }
+
 
   toggleWishlist(productId) {
     let index = this.wishlist.indexOf(productId);
@@ -2079,7 +2187,24 @@ class ECommerceApp {
       return;
     }
 
-    this.syncCartWithProducts();
+    // Audit stock for all cart items
+    let stockViolation = false;
+    let stockWarningMessages = [];
+
+    this.cart.forEach(item => {
+      const fresh = this.products.find(p => p.id === item.product.id);
+      const prod = fresh || item.product;
+      const availableStock = this.getAvailableStock(prod);
+      const isOut = this.isOutOfStock(prod);
+
+      if (isOut || availableStock <= 0) {
+        stockViolation = true;
+        stockWarningMessages.push(`"${prod.name}" is currently Out of Stock.`);
+      } else if (item.quantity > availableStock) {
+        stockViolation = true;
+        stockWarningMessages.push(`Only ${availableStock} unit(s) of "${prod.name}" available in stock, but you requested ${item.quantity}.`);
+      }
+    });
 
     let discountAmt = 0;
     let discountPercent = 0;
@@ -2122,8 +2247,28 @@ class ECommerceApp {
       if (grandEl) grandEl.innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
 
       const submitBtn = document.querySelector('#checkout-form button[type="submit"]');
+      const warningTextEl = document.getElementById("checkout-submit-warning-text");
+
       if (submitBtn) {
-        submitBtn.textContent = `Confirm Order (${window.GalaxyUtils.formatCurrency(total)})`;
+        if (stockViolation) {
+          submitBtn.disabled = true;
+          submitBtn.style.backgroundColor = "#d9534f";
+          submitBtn.style.borderColor = "#d9534f";
+          submitBtn.style.color = "#ffffff";
+          submitBtn.style.cursor = "not-allowed";
+          submitBtn.style.opacity = "0.7";
+          submitBtn.innerHTML = `<i data-lucide="alert-circle" style="width:16px;height:16px;margin-right:6px;vertical-align:middle;"></i> Stock Limit Exceeded (${window.GalaxyUtils.formatCurrency(total)})`;
+          if (warningTextEl) warningTextEl.style.display = "block";
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.style.backgroundColor = "";
+          submitBtn.style.borderColor = "";
+          submitBtn.style.color = "";
+          submitBtn.style.cursor = "";
+          submitBtn.style.opacity = "";
+          submitBtn.textContent = `Confirm Order (${window.GalaxyUtils.formatCurrency(total)})`;
+          if (warningTextEl) warningTextEl.style.display = "none";
+        }
       }
     };
 
@@ -2136,6 +2281,20 @@ class ECommerceApp {
         </div>
         <h1 class="section-title" style="margin-bottom: var(--spacing-xl); text-align:left;">Secure Checkout</h1>
         
+        ${stockViolation ? `
+          <div class="checkout-stock-alert-banner" style="background:#fff3cd; border:1px solid #ffeeba; color:#856404; padding:1.2rem; border-radius:8px; margin-bottom:1.5rem; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-weight:700; font-size:1.05rem; display:flex; align-items:center; gap:6px;">
+              <i data-lucide="alert-triangle" style="stroke:#856404;"></i> Cannot Place Order: Stock Limit Exceeded
+            </div>
+            <ul style="margin:0; padding-left:1.2rem; font-size:0.9rem;">
+              ${stockWarningMessages.map(msg => `<li>${msg}</li>`).join('')}
+            </ul>
+            <div style="margin-top:6px;">
+              <a href="/cart" class="btn btn-outline-black btn-sm"><i data-lucide="arrow-left" style="width:14px;height:14px;margin-right:4px;"></i> Return to Shopping Bag to Adjust Quantity</a>
+            </div>
+          </div>
+        ` : ""}
+
         <div class="checkout-layout">
           <!-- Customer Details & Billing -->
           <form id="checkout-form" class="contact-form-wrapper" style="box-shadow:none;">
@@ -2190,7 +2349,12 @@ class ECommerceApp {
               </label>
             </div>
 
-            <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top: var(--spacing-lg);">Confirm Order</button>
+            <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top: var(--spacing-lg);" ${stockViolation ? "disabled style='background-color:#d9534f; border-color:#d9534f; color:#fff; opacity:0.7; cursor:not-allowed;'" : ""}>
+              ${stockViolation ? "⚠️ Stock Limit Exceeded" : "Confirm Order"}
+            </button>
+            <p id="checkout-submit-warning-text" style="display:${stockViolation ? 'block' : 'none'}; color:#d9534f; font-weight:600; font-size:0.85rem; margin-top:8px; text-align:center;">
+              ⚠️ Cannot place order: Requested item quantity exceeds available showroom stock. Please adjust quantity in your bag.
+            </p>
           </form>
 
           <!-- Order Summary Card -->
@@ -2199,14 +2363,23 @@ class ECommerceApp {
             
             <div class="checkout-items-list">
               ${this.cart.map(item => {
-      const unitPrice = (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price);
-      return `
-                  <div class="checkout-item-row">
-                    <span class="checkout-item-name">${item.product.name} (x${item.quantity})</span>
+                const fresh = this.products.find(p => p.id === item.product.id);
+                const prod = fresh || item.product;
+                const availableStock = this.getAvailableStock(prod);
+                const isOut = this.isOutOfStock(prod);
+                const itemStockViolation = isOut || item.quantity > availableStock;
+                const unitPrice = (prod.offerPrice && Number(prod.offerPrice) > 0) ? Number(prod.offerPrice) : Number(prod.price);
+
+                return `
+                  <div class="checkout-item-row" style="${itemStockViolation ? 'background:#fff5f5; border-left:3px solid #d9534f; padding:6px 8px; border-radius:4px; margin-bottom:6px;' : ''}">
+                    <span class="checkout-item-name">
+                      ${prod.name} (x${item.quantity})
+                      ${itemStockViolation ? `<br><small style="color:#d9534f; font-weight:600;">⚠️ ${isOut ? 'Out of Stock' : `Exceeds stock (Max: ${availableStock})`}</small>` : ''}
+                    </span>
                     <span class="checkout-item-price">${window.GalaxyUtils.formatCurrency(unitPrice * item.quantity)}</span>
                   </div>
                 `;
-    }).join("")}
+              }).join("")}
             </div>
 
             <form id="checkout-coupon-form" style="display:flex; gap:0.5rem; margin-bottom: 1.5rem; margin-top: 1rem;">
@@ -2238,6 +2411,7 @@ class ECommerceApp {
         </div>
       </section>
     `;
+
 
     lucide.createIcons();
     renderSummary();
@@ -2298,8 +2472,48 @@ class ECommerceApp {
       chForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
+        // 1. Reload latest products from localStorage
+        try {
+          const freshProds = JSON.parse(localStorage.getItem("gd_products"));
+          if (Array.isArray(freshProds) && freshProds.length > 0) {
+            this.products = freshProds;
+          }
+        } catch (err) {}
+
+        // 2. Sync cart items with fresh product stock counts
+        this.syncCartWithProducts();
+
+        if (this.cart.length === 0) {
+          window.GalaxyUtils.showToast("⚠️ Your shopping bag is empty.", "error");
+          window.GalaxyRouter.navigate("/cart");
+          return;
+        }
+
+        // 3. Strict Pre-Submission & Pre-Payment Stock Audit Loop
+        for (let item of this.cart) {
+          const fresh = this.products.find(p => p.id === item.product.id);
+          const prod = fresh || item.product;
+          const availableStock = this.getAvailableStock(prod);
+          const isOut = this.isOutOfStock(prod);
+
+          if (isOut || availableStock <= 0) {
+            window.GalaxyUtils.showToast(`⚠️ Cannot place order: "${prod.name}" is currently Out of Stock! Your shopping bag has been updated.`, "error");
+            this.syncCartWithProducts();
+            this.renderCheckoutPage();
+            return;
+          }
+
+          if (item.quantity > availableStock) {
+            window.GalaxyUtils.showToast(`⚠️ Cannot proceed to payment: Only ${availableStock} unit(s) of "${prod.name}" available in stock, but you requested ${item.quantity}. Your bag quantity has been updated.`, "error");
+            this.syncCartWithProducts();
+            this.renderCheckoutPage();
+            return;
+          }
+        }
+
         const phoneVal = document.getElementById("ch-phone").value.trim();
         const digitsOnly = phoneVal.replace(/[^0-9]/g, "");
+
         if (phoneVal.startsWith("+")) {
           if (digitsOnly.length < 7) {
             window.GalaxyUtils.showToast("Foreign phone number must have at least 7 digits.", "error");
@@ -2515,7 +2729,33 @@ class ECommerceApp {
       orders.push(orderDetails);
       localStorage.setItem("gd_orders", JSON.stringify(orders));
 
-      // Sync to real backend
+      // Deduct purchased item quantities from product stock
+      if (Array.isArray(orderDetails.items)) {
+        let prodsChanged = false;
+        orderDetails.items.forEach(item => {
+          let prod = this.products.find(p => p.id === item.id);
+          if (prod) {
+            let currentStock = this.getAvailableStock(prod);
+            let newStock = Math.max(0, currentStock - (Number(item.quantity) || 1));
+            prod.stockCount = newStock;
+            if (prod.specs && typeof prod.specs === 'object') {
+              prod.specs.stockCount = newStock;
+            }
+            if (newStock === 0) {
+              prod.inStock = false;
+            }
+            prodsChanged = true;
+            if (window.GalaxyAPI) {
+              window.GalaxyAPI.syncEntity('products/' + prod.id, 'PUT', prod);
+            }
+          }
+        });
+        if (prodsChanged) {
+          localStorage.setItem("gd_products", JSON.stringify(this.products));
+        }
+      }
+
+      // Sync order to real backend
       if (window.GalaxyAPI) {
         window.GalaxyAPI.syncEntity('orders', 'POST', orderDetails);
       }
@@ -2530,6 +2770,7 @@ class ECommerceApp {
 
     window.GalaxyRouter.navigate("/order-success");
   }
+
 
   // --- 8. Render ORDER SUCCESS PAGE ---
   renderOrderSuccess() {
