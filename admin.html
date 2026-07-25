@@ -3278,36 +3278,63 @@
     });
 
     // Add Coupon
-    document.getElementById("settings-coupon-form").addEventListener("submit", (e) => {
+    document.getElementById("settings-coupon-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       let code = document.getElementById("coupon-new-code").value.trim().toUpperCase();
-      let val = parseInt(document.getElementById("coupon-new-val").value);
+      let val = parseInt(document.getElementById("coupon-new-val").value, 10);
 
       if (coupons.some(c => c.code === code)) {
         window.GalaxyUtils.showToast("Coupon code already active.", "error");
         return;
       }
 
-      coupons.push({ code, discount: val });
+      const newCoupon = {
+        id: 'c_' + Date.now(),
+        code: code,
+        discountType: 'percentage',
+        discountValue: val,
+        minOrderValue: 0,
+        isActive: true
+      };
+
+      coupons.push(newCoupon);
       saveCoupons();
+
+      // Sync new coupon to backend & Supabase DB
+      if (window.GalaxyAPI) {
+        await window.GalaxyAPI.syncEntity('coupons', 'POST', newCoupon);
+      }
+
       renderSettingsTab();
       document.getElementById("settings-coupon-form").reset();
-      window.GalaxyUtils.showToast("Promo Coupon created.");
+      window.GalaxyUtils.showToast("Promo Coupon created and saved to DB.");
     });
 
     function tbodyCouponsEvents(tbody) {
       tbody.querySelectorAll(".btn-del-coupon").forEach(btn => {
-        btn.addEventListener("click", () => {
+        btn.addEventListener("click", async () => {
           let idx = parseInt(btn.closest("tr").getAttribute("data-index"));
-          if (confirm(`Remove promo coupon "${coupons[idx].code}"?`)) {
+          if (!coupons[idx]) return;
+
+          let targetCoupon = coupons[idx];
+          let couponId = targetCoupon.id || targetCoupon.code;
+
+          if (confirm(`Remove promo coupon "${targetCoupon.code}"?`)) {
             coupons.splice(idx, 1);
             saveCoupons();
+
+            // Sync deletion to backend & Supabase DB
+            if (window.GalaxyAPI && couponId) {
+              await window.GalaxyAPI.deleteEntity('coupons', couponId);
+            }
+
             renderSettingsTab();
-            window.GalaxyUtils.showToast("Coupon deactivated.", "info");
+            window.GalaxyUtils.showToast("Coupon deleted.", "info");
           }
         });
       });
     }
+
 
     // Add Category
     document.getElementById("settings-category-form").addEventListener("submit", (e) => {

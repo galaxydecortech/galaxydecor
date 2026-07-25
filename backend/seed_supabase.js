@@ -82,7 +82,16 @@ async function seedSupabase() {
       console.log(`✅ Reviews seeded (${initialData.reviews.length} reviews)`);
     }
 
+    // 6. Seed Coupons
+    if (initialData.coupons) {
+      console.log('⏳ Seeding coupons...');
+      const { error } = await supabase.from('coupons').upsert(initialData.coupons);
+      if (error) throw new Error(`Coupons Seed Error: ${error.message}`);
+      console.log(`✅ Coupons seeded (${initialData.coupons.length} coupons)`);
+    }
+
     console.log('\n🎉 ALL STORE DATA SEEDED TO SUPABASE SUCCESSFULLY!\n');
+
     console.log('======================================\n');
 
   } catch (err) {

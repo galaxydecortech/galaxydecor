@@ -110,6 +110,59 @@ window.GalaxyAPI = {
     }
   },
 
+  async validateCoupon(code, amount = 0) {
+    if (!code) return { valid: false, error: "Please enter a coupon code." };
+    const cleanCode = String(code).trim().toUpperCase();
+
+    // 1. Try Backend Live Validation API
+    try {
+      const res = await fetch(`${API_BASE}/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: cleanCode, amount })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+      const errData = await res.json();
+      if (errData && errData.error) {
+        return { valid: false, error: errData.error };
+      }
+    } catch (e) {
+      console.warn("Backend coupon validation failed, falling back to local storage.", e);
+    }
+
+    // 2. Offline / Local Storage Fallback
+    const localCoupons = JSON.parse(localStorage.getItem("gd_coupons") || "null") || 
+                         (window.GALAXY_DECOR_DB ? window.GALAXY_DECOR_DB.coupons : []);
+    const matched = (localCoupons || []).find(c => c.code === cleanCode && (c.isActive === undefined || c.isActive === true));
+    
+    if (!matched) {
+      return { valid: false, error: "Invalid or inactive promo coupon code." };
+    }
+
+    const minVal = Number(matched.minOrderValue) || 0;
+    if (amount > 0 && amount < minVal) {
+      return { 
+        valid: false, 
+        error: `Coupon ${cleanCode} requires a minimum order amount of ₹${minVal.toLocaleString('en-IN')}.` 
+      };
+    }
+
+    return {
+      valid: true,
+      coupon: {
+        id: matched.id,
+        code: matched.code,
+        discountType: matched.discountType || (matched.discount ? 'percentage' : 'fixed'),
+        discountValue: Number(matched.discountValue !== undefined ? matched.discountValue : matched.discount) || 0,
+        minOrderValue: minVal
+      }
+    };
+  },
+
+
   // ----------------------------------------------------
   // POST / PUT / DELETE Methods (Admin operations)
   // ----------------------------------------------------

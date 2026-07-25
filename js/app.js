@@ -1940,18 +1940,27 @@ class ECommerceApp {
 
     // Coupon logic
     const couponForm = document.getElementById("cart-coupon-form");
-    couponForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      let code = document.getElementById("coupon-code").value.trim().toUpperCase();
-      let gd_coupons = JSON.parse(localStorage.getItem("gd_coupons") || "[]");
-      let matched = gd_coupons.find(c => c.code === code);
-      if (matched) {
-        window.GalaxyUtils.showToast(`Coupon ${code} applied! ${matched.discount}% discount subtracted from Subtotal.`);
-        this.applyDiscount(matched.discount / 100);
-      } else {
-        window.GalaxyUtils.showToast("Invalid promo coupon code.", "error");
-      }
-    });
+    if (couponForm) {
+      couponForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const codeInput = document.getElementById("coupon-code");
+        if (!codeInput) return;
+        const code = codeInput.value.trim().toUpperCase();
+        const subtotal = this.cart.reduce((sum, item) => sum + ((item.product.offerPrice || item.product.price) * item.quantity), 0);
+
+        const res = await window.GalaxyAPI.validateCoupon(code, subtotal);
+        if (res.valid) {
+          this.appliedPromo = res.coupon;
+          const discountDesc = res.coupon.discountType === 'percentage' ? `${res.coupon.discountValue}%` : `₹${res.coupon.discountValue}`;
+          window.GalaxyUtils.showToast(`Coupon ${res.coupon.code} applied! (${discountDesc} discount)`);
+          this.calculateCartTotals();
+        } else {
+          this.appliedPromo = null;
+          window.GalaxyUtils.showToast(res.error || "Invalid promo coupon code.", "error");
+          this.calculateCartTotals();
+        }
+      });
+    }
   }
 
   renderCartPageRows() {
@@ -2012,8 +2021,17 @@ class ECommerceApp {
     this.calculateCartTotals();
   }
 
-  calculateCartTotals(discountPercent = 0.0) {
+  calculateCartTotals() {
     let subtotal = this.cart.reduce((sum, item) => sum + ((item.product.offerPrice || item.product.price) * item.quantity), 0);
+
+    let discountAmt = 0;
+    if (this.appliedPromo) {
+      if (this.appliedPromo.discountType === 'percentage') {
+        discountAmt = Math.round((subtotal * this.appliedPromo.discountValue) / 100);
+      } else {
+        discountAmt = Number(this.appliedPromo.discountValue) || 0;
+      }
+    }
 
     const subEl = document.getElementById("cart-page-subtotal");
     const shippingEl = document.getElementById("cart-page-shipping");
@@ -2027,14 +2045,15 @@ class ECommerceApp {
       shippingEl.style.color = totalShipping > 0 ? "inherit" : "var(--color-success)";
     }
     if (grandEl) {
-      let total = subtotal - (subtotal * (discountPercent / 100)) + totalShipping;
+      let total = Math.max(0, subtotal - discountAmt + totalShipping);
       grandEl.innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
     }
   }
 
   applyDiscount(percent) {
-    this.calculateCartTotals(percent);
+    this.calculateCartTotals();
   }
+
 
   // --- 7. Render CHECKOUT PAGE ---
   renderCheckoutPage() {
@@ -2208,22 +2227,36 @@ class ECommerceApp {
 
     const chCouponForm = document.getElementById("checkout-coupon-form");
     if (chCouponForm) {
-      chCouponForm.addEventListener("submit", (e) => {
+      chCouponForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        let code = document.getElementById("ch-coupon-code").value.trim().toUpperCase();
-        let gd_coupons = JSON.parse(localStorage.getItem("gd_coupons") || "[]");
-        let matched = gd_coupons.find(c => c.code === code);
-        if (matched) {
-          window.GalaxyUtils.showToast(`Coupon ${code} applied! ${matched.discount}% discount.`);
-          discountPercent = matched.discount / 100;
-          discountAmt = subtotal * discountPercent;
-          appliedPromoStr = code;
+        const codeInput = document.getElementById("ch-coupon-code");
+        if (!codeInput) return;
+        const code = codeInput.value.trim().toUpperCase();
+        const sub = getTotals().subtotal;
+
+        const res = await window.GalaxyAPI.validateCoupon(code, sub);
+        if (res.valid) {
+          const c = res.coupon;
+          this.appliedPromo = c;
+          if (c.discountType === 'percentage') {
+            discountAmt = Math.round((sub * c.discountValue) / 100);
+          } else {
+            discountAmt = Number(c.discountValue) || 0;
+          }
+          appliedPromoStr = c.code;
+          const discountDesc = c.discountType === 'percentage' ? `${c.discountValue}%` : `₹${c.discountValue}`;
+          window.GalaxyUtils.showToast(`Coupon ${c.code} applied! (${discountDesc} discount)`);
           renderSummary();
         } else {
-          window.GalaxyUtils.showToast("Invalid promo coupon code.", "error");
+          this.appliedPromo = null;
+          discountAmt = 0;
+          appliedPromoStr = "";
+          window.GalaxyUtils.showToast(res.error || "Invalid promo coupon code.", "error");
+          renderSummary();
         }
       });
     }
+
 
     // Toggle Payment selection visuals
     const rCod = document.getElementById("method-cod");

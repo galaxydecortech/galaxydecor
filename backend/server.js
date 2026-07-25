@@ -423,6 +423,8 @@ app.get('/api/coupons', requireAdminAuth, async (req, res) => {
     if (error) throw error;
     const coupons = (data || []).map(row => ({
       ...row,
+      discountValue: Number(row.discountValue) || 0,
+      minOrderValue: Number(row.minOrderValue) || 0,
       isActive: Boolean(row.isActive)
     }));
     res.json(coupons);
@@ -430,6 +432,100 @@ app.get('/api/coupons', requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+// Public Validation Endpoint for Storefront Customers
+app.post('/api/coupons/validate', async (req, res) => {
+  try {
+    const { code, amount } = req.body || {};
+    if (!code) {
+      return res.status(400).json({ valid: false, error: 'Coupon code is required.' });
+    }
+    const cleanCode = String(code).trim().toUpperCase();
+    const subtotal = Number(amount) || 0;
+
+    const { data: coupon, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', cleanCode)
+      .eq('isActive', true)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!coupon) {
+      return res.status(404).json({ valid: false, error: 'Invalid or inactive promo coupon code.' });
+    }
+
+    const minVal = Number(coupon.minOrderValue) || 0;
+    if (subtotal > 0 && subtotal < minVal) {
+      return res.status(400).json({
+        valid: false,
+        error: `Coupon ${cleanCode} requires a minimum order amount of ₹${minVal.toLocaleString('en-IN')}.`
+      });
+    }
+
+    res.json({
+      valid: true,
+      coupon: {
+        id: coupon.id,
+        code: coupon.code,
+        discountType: coupon.discountType || 'percentage',
+        discountValue: Number(coupon.discountValue) || 0,
+        minOrderValue: minVal
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ valid: false, error: err.message });
+  }
+});
+
+app.post('/api/coupons', requireAdminAuth, async (req, res) => {
+  try {
+    const c = req.body || {};
+    const couponRecord = {
+      id: c.id || 'c_' + Date.now(),
+      code: String(c.code || '').trim().toUpperCase(),
+      discountType: c.discountType === 'fixed' ? 'fixed' : 'percentage',
+      discountValue: Number(c.discountValue) || 0,
+      minOrderValue: Number(c.minOrderValue) || 0,
+      isActive: c.isActive !== undefined ? Boolean(c.isActive) : true
+    };
+    const { data, error } = await supabase.from('coupons').upsert([couponRecord]).select();
+    if (error) throw error;
+    res.json(data ? data[0] : couponRecord);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/coupons/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const c = req.body || {};
+    const updateRecord = {
+      code: String(c.code || '').trim().toUpperCase(),
+      discountType: c.discountType === 'fixed' ? 'fixed' : 'percentage',
+      discountValue: Number(c.discountValue) || 0,
+      minOrderValue: Number(c.minOrderValue) || 0,
+      isActive: c.isActive !== undefined ? Boolean(c.isActive) : true
+    };
+    const { data, error } = await supabase.from('coupons').update(updateRecord).eq('id', req.params.id).select();
+    if (error) throw error;
+    res.json({ message: 'Updated', data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/coupons/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const { error } = await supabase.from('coupons').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // ----------------------------------------------------
 // 9. Razorpay Payment API
