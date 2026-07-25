@@ -2234,11 +2234,23 @@
     function renderOverviewTab() {
       const ordersTbody = document.getElementById("overview-orders-tbody");
       const enquiriesTbody = document.getElementById("overview-enquiries-tbody");
+      if (!ordersTbody || !enquiriesTbody) return;
 
-      // 5 Recent orders
-      let recentOrders = orders.slice().reverse().slice(0, 5);
+      const query = (document.getElementById("admin-global-search-input")?.value || "").toLowerCase().trim();
+
+      // 1. Filter Recent Orders by search query
+      let filteredOrders = orders.slice().reverse().filter(o => {
+        if (!query) return true;
+        const ordId = (o.orderId || o.id || '').toLowerCase();
+        const ordName = (o.name || o.customerName || '').toLowerCase();
+        const ordPhone = (o.phone || o.customerPhone || '').toLowerCase();
+        const ordStatus = (o.orderStatus || o.status || '').toLowerCase();
+        return ordId.includes(query) || ordName.includes(query) || ordPhone.includes(query) || ordStatus.includes(query);
+      });
+
+      let recentOrders = filteredOrders.slice(0, 5);
       if (recentOrders.length === 0) {
-        ordersTbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">No orders reserved.</td></tr>';
+        ordersTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#999; padding:1.5rem;">${query ? 'No matching orders found.' : 'No orders reserved.'}</td></tr>`;
       } else {
         ordersTbody.innerHTML = recentOrders.map(o => {
           const ordId = o.orderId || o.id || 'GD-000000';
@@ -2256,10 +2268,20 @@
         }).join("");
       }
 
-      // 5 Recent enquiries
-      let recentEnquiries = enquiries.slice().reverse().slice(0, 5);
+      // 2. Filter Recent Enquiries by search query
+      let filteredEnquiries = enquiries.slice().reverse().filter(e => {
+        if (!query) return true;
+        const eName = (e.name || '').toLowerCase();
+        const eEmail = (e.email || '').toLowerCase();
+        const ePhone = (e.phone || '').toLowerCase();
+        const eInterest = (e.interest || '').toLowerCase();
+        const eMessage = (e.message || '').toLowerCase();
+        return eName.includes(query) || eEmail.includes(query) || ePhone.includes(query) || eInterest.includes(query) || eMessage.includes(query);
+      });
+
+      let recentEnquiries = filteredEnquiries.slice(0, 5);
       if (recentEnquiries.length === 0) {
-        enquiriesTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#999;">No form enquiries.</td></tr>';
+        enquiriesTbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999; padding:1.5rem;">${query ? 'No matching enquiries found.' : 'No form enquiries.'}</td></tr>`;
       } else {
         enquiriesTbody.innerHTML = recentEnquiries.map(e => {
           const interestVal = e.interest || 'General';
@@ -2300,7 +2322,19 @@
         else if (activeTab === "reviews") renderReviewsTab();
         else if (activeTab === "settings") renderSettingsTab();
       });
+
+      // Pressing Enter on overview tab switches to Products tab if product matches exist
+      globalSearchInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const activeTab = document.querySelector(".menu-item.active")?.getAttribute("data-tab") || "overview";
+          if (activeTab === "overview" && globalSearchInput.value.trim()) {
+            const tabBtn = document.querySelector('.menu-item[data-tab="products"]');
+            if (tabBtn) tabBtn.click();
+          }
+        }
+      });
     }
+
 
     if (searchInput) searchInput.addEventListener("input", renderProductsTab);
     if (filterCat) filterCat.addEventListener("change", renderProductsTab);
