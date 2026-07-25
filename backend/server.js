@@ -159,14 +159,24 @@ app.get('/api/products', async (req, res) => {
   try {
     const { data, error } = await supabase.from('products').select('*');
     if (error) throw error;
-    const products = (data || []).map(row => ({
-      ...row,
-      shipping: Number(row.shipping) || 0,
-      gallery: typeof row.gallery === 'string' ? JSON.parse(row.gallery || '[]') : (row.gallery || []),
-      specs: typeof row.specs === 'string' ? JSON.parse(row.specs || '{}') : (row.specs || {}),
-      isNew: Boolean(row.isNew),
-      inStock: Boolean(row.inStock)
-    }));
+    const products = (data || []).map(row => {
+      const parsedSpecs = typeof row.specs === 'string' ? JSON.parse(row.specs || '{}') : (row.specs || {});
+      const specStock = parsedSpecs && parsedSpecs.stockCount !== undefined ? Number(parsedSpecs.stockCount) : undefined;
+      const sCount = (row.stockCount !== undefined && row.stockCount !== null)
+        ? Number(row.stockCount)
+        : (specStock !== undefined ? specStock : (Boolean(row.inStock) ? 5 : 0));
+      const inSt = Boolean(row.inStock) && sCount > 0;
+
+      return {
+        ...row,
+        shipping: Number(row.shipping) || 0,
+        gallery: typeof row.gallery === 'string' ? JSON.parse(row.gallery || '[]') : (row.gallery || []),
+        specs: parsedSpecs,
+        isNew: Boolean(row.isNew),
+        stockCount: sCount,
+        inStock: inSt
+      };
+    });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -177,6 +187,10 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
   try {
     const p = req.body || {};
     const id = p.id || 'p_' + Date.now();
+    const stockVal = p.stockCount !== undefined ? Number(p.stockCount) : (p.inStock ? 5 : 0);
+    const specsObj = typeof p.specs === 'object' && p.specs !== null ? { ...p.specs } : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {});
+    specsObj.stockCount = stockVal;
+
     const productRecord = {
       id,
       name: p.name || 'Untitled Product',
@@ -189,8 +203,9 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
       image: p.image || '',
       gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
-      inStock: Boolean(p.inStock),
-      specs: typeof p.specs === 'object' && p.specs !== null ? p.specs : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {})
+      inStock: stockVal > 0,
+      stockCount: stockVal,
+      specs: specsObj
     };
     const { data, error } = await supabase.from('products').upsert([productRecord]).select();
     if (error) throw error;
@@ -203,6 +218,10 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
 app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
   try {
     const p = req.body || {};
+    const stockVal = p.stockCount !== undefined ? Number(p.stockCount) : (p.inStock ? 5 : 0);
+    const specsObj = typeof p.specs === 'object' && p.specs !== null ? { ...p.specs } : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {});
+    specsObj.stockCount = stockVal;
+
     const updateRecord = {
       name: p.name || 'Untitled Product',
       category: p.category || 'General',
@@ -214,8 +233,9 @@ app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
       image: p.image || '',
       gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
-      inStock: Boolean(p.inStock),
-      specs: typeof p.specs === 'object' && p.specs !== null ? p.specs : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {})
+      inStock: stockVal > 0,
+      stockCount: stockVal,
+      specs: specsObj
     };
     const { data, error } = await supabase.from('products').update(updateRecord).eq('id', req.params.id).select();
     if (error) throw error;
@@ -224,6 +244,7 @@ app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 app.delete('/api/products/:id', requireAdminAuth, async (req, res) => {
   try {
@@ -560,7 +581,7 @@ app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res
   if (Array.isArray(items) && items.length > 0) {
     try {
       const itemIds = items.map(i => i.id).filter(Boolean);
-      
+
       if (itemIds.length > 0) {
         const { data: dbProducts } = await supabase.from('products').select('id, price, offerPrice, shipping').in('id', itemIds);
 

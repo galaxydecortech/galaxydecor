@@ -2199,14 +2199,14 @@ class ECommerceApp {
             
             <div class="checkout-items-list">
               ${this.cart.map(item => {
-                const unitPrice = (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price);
-                return `
+      const unitPrice = (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price);
+      return `
                   <div class="checkout-item-row">
                     <span class="checkout-item-name">${item.product.name} (x${item.quantity})</span>
                     <span class="checkout-item-price">${window.GalaxyUtils.formatCurrency(unitPrice * item.quantity)}</span>
                   </div>
                 `;
-              }).join("")}
+    }).join("")}
             </div>
 
             <form id="checkout-coupon-form" style="display:flex; gap:0.5rem; margin-bottom: 1.5rem; margin-top: 1rem;">
