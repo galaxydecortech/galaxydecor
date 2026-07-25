@@ -1799,13 +1799,13 @@ class ECommerceApp {
         </div>
         <div class="product-detail-layout">
           <!-- Gallery -->
-          <div class="detail-gallery" style="display:flex !important; flex-direction:column !important; align-items:center !important; width:100% !important;">
-            <div class="qv-main-img-wrapper" id="detail-main-image-wrapper" style="width:100% !important; max-width:none !important; margin-bottom:20px !important;">
+          <div class="detail-gallery">
+            <div class="qv-main-img-wrapper" id="detail-main-image-wrapper">
               ${this.renderProductImageHTML(product, "detail-main-img")}
             </div>
             
             <!-- thumbnails -->
-            <div class="qv-thumbnail-gallery" style="width:100% !important; margin-bottom:20px !important;">
+            <div class="qv-thumbnail-gallery">
               ${images.map((img, i) => {
       const src = (img && !img.startsWith("default_") && !img.startsWith("placeholder"))
         ? ((img.startsWith("http") || img.startsWith("data:")) ? img : `/assets/products/${img}`)
@@ -1829,17 +1829,17 @@ class ECommerceApp {
           </div>
 
           <!-- Options -->
-          <div>
+          <div class="detail-info-wrapper">
             <span class="detail-meta-cat">${this.getCategoryName(product.category)}</span>
             <h1 class="detail-title">${product.name}</h1>
 
-            <div class="detail-price-row" style="margin-bottom: var(--spacing-sm); border-bottom: none;">
+            <div class="detail-price-row">
               <span class="detail-price-actual">${window.GalaxyUtils.formatCurrency(product.offerPrice || product.price)}</span>
               ${product.offerPrice ? `<span class="detail-price-original">${window.GalaxyUtils.formatCurrency(product.price)}</span>` : ""}
               ${product.offerPrice ? `<span class="detail-discount-badge">-${Math.round((product.price - product.offerPrice) / product.price * 100)}% DISCOUNT</span>` : ""}
             </div>
 
-            <div class="detail-stock-status" style="margin-bottom: var(--spacing-md); font-weight:600; font-size:1rem; color: ${product.inStock ? 'var(--color-success)' : 'var(--color-error)'}; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: var(--spacing-sm);">
+            <div class="detail-stock-status" style="color: ${product.inStock ? 'var(--color-success)' : 'var(--color-error)'};">
               ${product.inStock ? (product.stockCount !== undefined ? `✅ Only ${product.stockCount} left in stock` : "✅ In Stock") : "❌ Out of Stock"}
             </div>
 
@@ -1854,15 +1854,17 @@ class ECommerceApp {
                 </div>
                 
                 <div class="purchase-actions">
-                  <button class="btn btn-gold" id="btn-detail-add-cart" ${!product.inStock ? "disabled style='opacity:0.6; cursor:not-allowed;'" : ""}><i data-lucide="shopping-bag" style="width:16px;height:16px;margin-right:8px;"></i> ${!product.inStock ? "Sold Out" : "Add To Cart"}</button>
+                  <button class="btn btn-gold" id="btn-detail-add-cart" ${!product.inStock ? "disabled style='opacity:0.6; cursor:not-allowed;'" : ""}><i data-lucide="shopping-bag" style="width:15px;height:15px;margin-right:5px;flex-shrink:0;"></i> ${!product.inStock ? "Sold Out" : "Add To Cart"}</button>
                   <button class="btn btn-black" id="btn-detail-buy" ${!product.inStock ? "disabled style='opacity:0.6; cursor:not-allowed;'" : ""}>Buy Now</button>
                 </div>
+
 
                 <button class="wishlist-detail-btn ${isWish ? "wishlisted" : ""}" id="btn-detail-wish" aria-label="Toggle Wishlist">
                   <i data-lucide="heart" style="width: 20px; height: 20px; ${isWish ? "fill: #C9A227; stroke: #C9A227;" : ""}"></i>
                 </button>
               </div>
             </div>
+
 
             <!-- Specifications Table -->
             <div class="specs-section">
