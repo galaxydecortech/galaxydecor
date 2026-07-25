@@ -1486,6 +1486,21 @@ class ECommerceApp {
   renderProducts(queryParams) {
     let rawCategory = queryParams.category || "";
     let searchQuery = queryParams.search || "";
+
+    // Infer category from searchQuery if rawCategory is missing
+    if (!rawCategory && searchQuery) {
+      const qLower = searchQuery.toLowerCase().trim();
+      if (qLower.includes("sofa") || qLower.includes("living")) rawCategory = "living-room";
+      else if (qLower.includes("dining") || qLower.includes("table")) rawCategory = "dining";
+      else if (qLower.includes("fountain")) rawCategory = "fountains";
+      else if (qLower.includes("desk") || qLower.includes("office")) rawCategory = "office";
+      else if (qLower.includes("vase")) rawCategory = "vases";
+      else if (qLower.includes("bedroom") || qLower.includes("bed")) rawCategory = "bedroom";
+      else if (qLower.includes("decor")) rawCategory = "decor-accessories";
+      else if (qLower.includes("gift")) rawCategory = "gift-items";
+      else if (qLower.includes("showpiece")) rawCategory = "showpieces";
+    }
+
     let activeCategory = rawCategory === "decor" ? "decor-accessories" : rawCategory;
 
     let selectedCategories = [];
@@ -1494,6 +1509,7 @@ class ECommerceApp {
     } else if (rawCategory) {
       selectedCategories = [rawCategory];
     }
+
 
     this.appRoot.innerHTML = `
       <section class="py-section catalog-py-section container">
