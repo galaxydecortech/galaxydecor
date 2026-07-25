@@ -1376,8 +1376,16 @@ class ECommerceApp {
 
   // --- 4. Render PRODUCTS CATALOG ---
   renderProducts(queryParams) {
-    let activeCategory = queryParams.category || "";
+    let rawCategory = queryParams.category || "";
     let searchQuery = queryParams.search || "";
+    let activeCategory = rawCategory === "decor" ? "decor-accessories" : rawCategory;
+
+    let selectedCategories = [];
+    if (rawCategory === "decor") {
+      selectedCategories = ["decor-accessories", "gift-items", "showpieces", "vases", "fountains"];
+    } else if (rawCategory) {
+      selectedCategories = [rawCategory];
+    }
 
     this.appRoot.innerHTML = `
       <section class="py-section catalog-py-section container">
@@ -1404,13 +1412,14 @@ class ECommerceApp {
                 <div class="filter-options">
                   ${this.categories.map(c => `
                     <label class="custom-checkbox">
-                      <input type="checkbox" name="f-category" value="${c.id}" ${activeCategory === c.id ? "checked" : ""}>
+                      <input type="checkbox" name="f-category" value="${c.id}" ${selectedCategories.includes(c.id) ? "checked" : ""}>
                       <span class="checkmark"></span>
                       <span class="checkbox-text">${c.name}</span>
                     </label>
                   `).join("")}
                 </div>
               </div>
+
 
               <!-- Price Limit Filter -->
               <div class="filter-group">
@@ -1531,14 +1540,22 @@ class ECommerceApp {
     const openMobileFilterBtn = document.getElementById("btn-open-mobile-filters");
     if (openMobileFilterBtn) openMobileFilterBtn.addEventListener("click", openFilters);
 
+    let initCats = [];
+    if (initialCategory === "decor") {
+      initCats = ["decor-accessories", "gift-items", "showpieces", "vases", "fountains"];
+    } else if (initialCategory) {
+      initCats = [initialCategory];
+    }
+
     // Local filter state
     const filterState = {
-      categories: initialCategory ? [initialCategory] : [],
+      categories: initCats,
       maxPrice: 150000,
       stockOnly: false,
       sortBy: "latest",
       search: searchQuery
     };
+
 
     // Update filter tags
     const applyFiltersAndRender = () => {
