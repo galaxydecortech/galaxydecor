@@ -7276,14 +7276,14 @@ section .btn-black[href="#/contact"] {
   background: #ffffff !important;
   border-radius: 12px !important;
   border: 1px solid #f3f4f6 !important;
-  padding: 1.5rem !important;
+  padding: 0 !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
   position: sticky !important;
-  top: 80px !important;
-  max-height: none !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  scrollbar-width: none !important;
+  top: 90px !important;
+  max-height: calc(100vh - 110px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
 .filters-header {
@@ -8624,40 +8624,91 @@ body:has(#quickview-modal:not(.hidden)) {
   }
 }
 
-/* --- Disable internal scrollbars on left filter sidebar --- */
+/* --- Filter Sidepanel Scrolling & Scrollbar Styles --- */
 .filters-sidebar,
 #catalog-filters-sidebar {
-  max-height: none !important;
-  height: auto !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  overflow-x: visible !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
-.filters-sidebar::-webkit-scrollbar,
-#catalog-filters-sidebar::-webkit-scrollbar {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+@media (min-width: 769px) {
+  .filters-sidebar,
+  #catalog-filters-sidebar {
+    position: sticky !important;
+    top: calc(var(--header-height, 80px) + 20px) !important;
+    max-height: calc(100vh - 120px) !important;
+    height: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .filters-sidebar,
+  #catalog-filters-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -340px !important;
+    width: 320px !important;
+    max-width: 85vw !important;
+    height: 100vh !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    z-index: 20001 !important;
+    transition: left 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  }
+
+  .filters-sidebar.active,
+  #catalog-filters-sidebar.active {
+    left: 0 !important;
+  }
+}
+
+.filters-header {
+  flex-shrink: 0 !important;
+}
+
+.filters-body-wrapper {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  flex-grow: 1 !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #D4AF37 rgba(0, 0, 0, 0.04) !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar {
+  width: 6px !important;
+  display: block !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-radius: 4px !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #D4AF37, #AA7C11) !important;
+  border-radius: 4px !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #F5CC50, #D4AF37) !important;
 }
 
 .filter-options {
   max-height: none !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
 }
 
-/* --- Completely Disable Hover Animations & Transitions on Left Sidepanel --- */
-.filters-sidebar,
-#catalog-filters-sidebar,
-.filters-sidebar:hover,
-#catalog-filters-sidebar:hover {
-  animation: none !important;
-  transition: none !important;
-  transform: none !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+/* --- Completely Disable Hover Animations & Transitions on Left Sidepanel on Desktop --- */
+@media (min-width: 769px) {
+  .filters-sidebar,
+  #catalog-filters-sidebar,
+  .filters-sidebar:hover,
+  #catalog-filters-sidebar:hover {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  }
 }
 
 /* --- Footer Styling Utilities & Portal Alignment --- */
