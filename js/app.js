@@ -1362,23 +1362,36 @@ class ECommerceApp {
     // Set up search terms filters inside App Root
     this.appRoot.innerHTML = `
       <section class="py-section container">
+        <!-- Mobile Filter Drawer Trigger & Overlay -->
+        <div class="mobile-filter-top-bar" id="mobile-filter-top-bar">
+          <button class="btn btn-outline-gold w-100 mobile-filter-btn" id="open-filter-drawer-btn" style="display: none; justify-content: center; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; margin-bottom: 1.25rem; width: 100%; border: 1.5px solid var(--color-accent, #C9A227); background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; color: #1e293b;">
+            <i data-lucide="sliders-horizontal" style="width: 18px; height: 18px; color: #C9A227;"></i>
+            <span>Filter Selection</span>
+          </button>
+        </div>
+        <div class="mobile-sidebar-overlay" id="filter-drawer-overlay" style="z-index: 99998;"></div>
+
         <div class="catalog-layout">
-          <!-- Sidebar Filters -->
-          <aside class="filters-sidebar collapsed" id="catalog-filters-sidebar">
-            <div class="filters-header" id="filters-header-toggle">
-              <div class="filters-title-wrap">
-                <i data-lucide="sliders-horizontal" class="filters-header-icon"></i>
-                <span class="filters-title">Filter Selection</span>
-                <i data-lucide="chevron-down" class="filter-collapse-chevron"></i>
+          <!-- Sidebar Filters (Off-canvas on mobile) -->
+          <aside class="filters-sidebar" id="catalog-filters-sidebar">
+            <div class="filters-header" id="filters-header-toggle" style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(0,0,0,0.08); margin-bottom: 1rem;">
+              <div class="filters-title-wrap" style="display: flex; align-items: center; gap: 0.5rem;">
+                <i data-lucide="sliders-horizontal" class="filters-header-icon" style="color: #C9A227;"></i>
+                <span class="filters-title" style="font-size: 1.1rem; font-weight: 600;">Filter Selection</span>
               </div>
-              <button class="clear-filters-btn" id="btn-clear-filters">Clear All</button>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <button class="clear-filters-btn" id="btn-clear-filters" style="background: none; border: none; font-size: 0.85rem; color: #64748b; text-decoration: underline; cursor: pointer; font-weight: 500;">Clear All</button>
+                <button class="close-filter-btn" id="btn-close-filter-drawer" style="display: none; background: #f1f5f9; border: none; border-radius: 50%; width: 32px; height: 32px; align-items: center; justify-content: center; cursor: pointer; color: #334155; transition: all 0.2s ease;" aria-label="Close filters">
+                  <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+                </button>
+              </div>
             </div>
             
             <div class="filters-body-wrapper" id="filters-body-wrapper">
               <!-- Category Filter -->
               <div class="filter-group">
                 <h4 class="filter-group-title">Category</h4>
-                <div class="filter-options category-scroll-box" id="category-filter-options" style="max-height: 175px !important; overflow-y: auto !important; overflow-x: hidden !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 8px !important; padding: 0.6rem 0.5rem !important; background: #fcfcfc !important; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04) !important;">
+                <div class="filter-options" id="category-filter-options">
                   ${this.categories.map(c => `
                     <label class="custom-checkbox">
                       <input type="checkbox" name="f-category" value="${c.id}" ${activeCategory === c.id ? "checked" : ""}>
@@ -1463,13 +1476,37 @@ class ECommerceApp {
     const sortSelect = document.getElementById("catalog-sort");
     const clearBtn = document.getElementById("btn-clear-filters");
 
-    // Collapsible Mobile Filter Sidebar Listener
-    const filterHeader = document.getElementById("filters-header-toggle");
+    // Off-Canvas Mobile Filter Drawer Controllers
+    const openFilterBtn = document.getElementById("open-filter-drawer-btn");
+    const closeFilterBtn = document.getElementById("btn-close-filter-drawer");
     const filterSidebar = document.getElementById("catalog-filters-sidebar");
+    const filterOverlay = document.getElementById("filter-drawer-overlay");
+    const filterHeader = document.getElementById("filters-header-toggle");
+
+    const openDrawer = () => {
+      if (filterSidebar) filterSidebar.classList.add("drawer-open");
+      if (filterOverlay) filterOverlay.classList.add("active");
+      document.body.style.overflow = "hidden"; // Prevent background scroll chaining
+    };
+
+    const closeDrawer = () => {
+      if (filterSidebar) filterSidebar.classList.remove("drawer-open");
+      if (filterOverlay) filterOverlay.classList.remove("active");
+      document.body.style.overflow = "";
+    };
+
+    if (openFilterBtn) openFilterBtn.addEventListener("click", openDrawer);
+    if (closeFilterBtn) closeFilterBtn.addEventListener("click", (e) => { e.stopPropagation(); closeDrawer(); });
+    if (filterOverlay) filterOverlay.addEventListener("click", closeDrawer);
+    
     if (filterHeader && filterSidebar) {
       filterHeader.addEventListener("click", (e) => {
-        if (e.target.closest("#btn-clear-filters")) return;
-        filterSidebar.classList.toggle("collapsed");
+        if (e.target.closest("#btn-clear-filters") || e.target.closest("#btn-close-filter-drawer")) return;
+        if (window.innerWidth <= 992 && !filterSidebar.classList.contains("drawer-open")) {
+          openDrawer();
+        } else if (window.innerWidth <= 992 && filterSidebar.classList.contains("drawer-open")) {
+          closeDrawer();
+        }
       });
     }
 
