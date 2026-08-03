@@ -86,7 +86,7 @@ galaxy-decor/
 ├── index.html               # Main Customer SPA UI
 ├── package.json             # Dependencies & start scripts
 └── vercel.json              # Vercel URL rewrite rules
-```
+``` 
 
 ---
 
