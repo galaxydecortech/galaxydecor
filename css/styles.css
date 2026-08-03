@@ -8675,4 +8675,185 @@ outline: none !important;
   .testimonials-section {
     padding: 2.5rem 0 !important;
   }
+}/* --- Fix Mobile View Filter Sidebar & Categories Getting Cut Off --- */
+@media (max-width: 992px) {
+  /* 1. Remove sticky behavior on mobile so the sidebar scrolls naturally without locking and cutting off content */
+  .filters-sidebar,
+  #catalog-filters-sidebar {
+    position: relative !important;
+    top: auto !important;
+    height: auto !important;
+    max-height: none !important;
+    margin-bottom: 1.5rem !important;
+    overflow: visible !important;
+  }
+
+  /* 2. Enable clean scrolling inside the filter dropdown on mobile and ensure ample bottom padding */
+  .filters-body-wrapper {
+    max-height: 75vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 1.25rem 1rem 2rem 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  /* 3. Limit category checkbox list height on mobile so Price Limit and Availability stay clearly visible */
+  .filter-group .filter-options {
+    max-height: 220px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding-right: 6px !important;
+    margin-bottom: 0.5rem !important;
+  }
+}
+/* ==========================================================================
+   MASTER FIX: ENABLE FILTER SIDEBAR SCROLLING & PREVENT CONTENT CUTOFF
+   ========================================================================== */
+
+/* 1. For Desktop & Sticky Views: Cap height to screen window & enable internal touch/mouse scrolling */
+.filters-sidebar,
+#catalog-filters-sidebar {
+  max-height: calc(100vh - 100px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scrollbar-width: thin !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 2rem !important;
+}
+
+/* Elegant custom scrollbar styling for filter sidebar */
+.filters-sidebar::-webkit-scrollbar,
+#catalog-filters-sidebar::-webkit-scrollbar {
+  display: block !important;
+  width: 5px !important;
+  height: 5px !important;
+}
+.filters-sidebar::-webkit-scrollbar-track,
+#catalog-filters-sidebar::-webkit-scrollbar-track {
+  background: #f8fafc !important;
+  border-radius: 4px !important;
+}
+.filters-sidebar::-webkit-scrollbar-thumb,
+#catalog-filters-sidebar::-webkit-scrollbar-thumb {
+  background: #C9A227 !important;
+  border-radius: 4px !important;
+}
+
+/* 2. Limit Category Checkbox List Height: Keeps Price Limit & Availability visible immediately */
+.filter-group .filter-options {
+  max-height: 240px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding-right: 8px !important;
+  margin-bottom: 0.75rem !important;
+  scrollbar-width: thin !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+.filter-group .filter-options::-webkit-scrollbar {
+  width: 4px !important;
+}
+.filter-group .filter-options::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 4px !important;
+}
+
+/* 3. Mobile & Tablet Layout (Up to 1024px): Full width, remove sticky lock, smooth internal scrolling */
+@media (max-width: 1024px) {
+  .catalog-layout {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+  }
+
+  .filters-sidebar,
+  #catalog-filters-sidebar {
+    position: relative !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: none !important;
+    height: auto !important;
+    margin-bottom: 1.5rem !important;
+    overflow: visible !important;
+    overflow-y: visible !important;
+  }
+
+  .filters-body-wrapper {
+    max-height: 380px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 1.25rem 1rem 2.5rem 1rem !important;
+    margin-top: 0.5rem !important;
+    margin-bottom: 1rem !important;
+    border: 1px solid var(--color-border) !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+}
+/* ==========================================================================
+   FINAL OVERRIDE: OVERSCROLL CONTAINMENT & FORCED CATEGORY SCROLLBAR
+   ========================================================================== */
+
+/* Stop background scroll chaining when scrolling inside filter containers */
+#catalog-filters-sidebar,
+#filters-body-wrapper,
+#category-filter-options,
+.category-scroll-box {
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+/* Force elegant scrollbar appearance inside the Category box */
+#category-filter-options::-webkit-scrollbar,
+.category-scroll-box::-webkit-scrollbar {
+  display: block !important;
+  width: 6px !important;
+}
+#category-filter-options::-webkit-scrollbar-track,
+.category-scroll-box::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+  border-radius: 6px !important;
+}
+#category-filter-options::-webkit-scrollbar-thumb,
+.category-scroll-box::-webkit-scrollbar-thumb {
+  background: #C9A227 !important;
+  border-radius: 6px !important;
+}
+
+/* Ensure mobile and tablet layouts never lock up or clip at bottom */
+@media (max-width: 1200px) {
+  .catalog-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  #catalog-filters-sidebar {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin-bottom: 1.25rem !important;
+  }
+
+  #filters-body-wrapper {
+    max-height: 75vh !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain !important;
+    padding: 1.25rem 1rem 2rem 1rem !important;
+    margin-top: 0.5rem !important;
+    border: 1px solid rgba(201, 162, 39, 0.3) !important;
+    border-radius: 12px !important;
+    background: #ffffff !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+  }
 }

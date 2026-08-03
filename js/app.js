@@ -1378,7 +1378,7 @@ class ECommerceApp {
               <!-- Category Filter -->
               <div class="filter-group">
                 <h4 class="filter-group-title">Category</h4>
-                <div class="filter-options">
+                <div class="filter-options category-scroll-box" id="category-filter-options" style="max-height: 175px !important; overflow-y: auto !important; overflow-x: hidden !important; border: 1px solid rgba(0, 0, 0, 0.08) !important; border-radius: 8px !important; padding: 0.6rem 0.5rem !important; background: #fcfcfc !important; box-shadow: inset 0 1px 3px rgba(0,0,0,0.04) !important;">
                   ${this.categories.map(c => `
                     <label class="custom-checkbox">
                       <input type="checkbox" name="f-category" value="${c.id}" ${activeCategory === c.id ? "checked" : ""}>
