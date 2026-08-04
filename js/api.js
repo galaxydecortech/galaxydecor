@@ -3,7 +3,7 @@
  * Safely fetches data from the backend and falls back to LocalStorage if offline.
  */
 
-const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:5000/api' : '/api';
+const API_BASE = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) ? 'http://localhost:5000/api' : '/api';
 
 window.GalaxyAPI = {
   

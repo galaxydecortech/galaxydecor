@@ -2092,10 +2092,10 @@
             loginSuccessful = true;
           }
         } catch (err) {
-          // Backend unreachable
+          // Backend unreachable or actual invalid credentials
           if (errorEl) {
+            errorEl.innerHTML = err.message || "Backend unreachable. Please ensure the server is running on port 5000.";
             errorEl.style.display = "block";
-            errorEl.textContent = "Server is currently unavailable. Please try again later.";
           }
           return false;
         }
