@@ -3,3 +3,11 @@ backend/node_modules/
 .env
 backend/.env
 .DS_Store
+
+# Development files
+temp_*.css
+*.ps1
+scratch/
+tools/
+backend/test_*.js
+backend/galaxy.db

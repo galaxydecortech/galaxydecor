@@ -610,5 +610,34 @@ window.GALAXY_DECOR_DB = {
         "Country of Origin": "Indonesia"
       }
     }
+  ],
+
+  // 4. Default Promo Coupons
+  coupons: [
+    {
+      id: "c_welcome10",
+      code: "WELCOME10",
+      discountType: "percentage",
+      discountValue: 10,
+      minOrderValue: 1000,
+      isActive: true
+    },
+    {
+      id: "c_galaxy15",
+      code: "GALAXY15",
+      discountType: "percentage",
+      discountValue: 15,
+      minOrderValue: 5000,
+      isActive: true
+    },
+    {
+      id: "c_festive500",
+      code: "FESTIVE500",
+      discountType: "fixed",
+      discountValue: 500,
+      minOrderValue: 3000,
+      isActive: true
+    }
   ]
 };
+

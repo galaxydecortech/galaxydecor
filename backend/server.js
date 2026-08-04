@@ -1,9 +1,9 @@
+const path = require('path');
 // Load environment variables from .env file (must be first)
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const express = require('express');
 const cors = require('cors');
-const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
@@ -51,11 +51,18 @@ app.use(express.static(path.join(__dirname, '..')));
 // ----------------------------------------------------
 // Admin Authentication & Authorization Middleware
 // ----------------------------------------------------
-const ADMIN_USER = String(process.env.ADMIN_USERNAME || 'admin').trim();
-const ADMIN_PASS = String(process.env.ADMIN_PASSWORD || 'galaxy123').trim();
-const ADMIN_TOKEN = String(process.env.ADMIN_TOKEN || 'gd_sec_token_98471205918237').trim();
+const ADMIN_USER = process.env.ADMIN_USERNAME ? String(process.env.ADMIN_USERNAME).trim() : null;
+const ADMIN_PASS = process.env.ADMIN_PASSWORD ? String(process.env.ADMIN_PASSWORD).trim() : null;
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN ? String(process.env.ADMIN_TOKEN).trim() : null;
+
+if (!ADMIN_USER || !ADMIN_PASS || !ADMIN_TOKEN) {
+  console.warn('WARNING: Admin credentials not fully configured in .env — admin routes are disabled.');
+}
 
 app.post('/api/admin/login', (req, res) => {
+  if (!ADMIN_USER || !ADMIN_PASS || !ADMIN_TOKEN) {
+    return res.status(503).json({ error: 'Admin authentication is not configured on the server.' });
+  }
   const { username, password } = req.body || {};
   const cleanUser = String(username || '').trim().toLowerCase();
   const cleanPass = String(password || '').trim();
@@ -152,13 +159,24 @@ app.get('/api/products', async (req, res) => {
   try {
     const { data, error } = await supabase.from('products').select('*');
     if (error) throw error;
-    const products = (data || []).map(row => ({
-      ...row,
-      gallery: typeof row.gallery === 'string' ? JSON.parse(row.gallery || '[]') : (row.gallery || []),
-      specs: typeof row.specs === 'string' ? JSON.parse(row.specs || '{}') : (row.specs || {}),
-      isNew: Boolean(row.isNew),
-      inStock: Boolean(row.inStock)
-    }));
+    const products = (data || []).map(row => {
+      const parsedSpecs = typeof row.specs === 'string' ? JSON.parse(row.specs || '{}') : (row.specs || {});
+      const specStock = parsedSpecs && parsedSpecs.stockCount !== undefined ? Number(parsedSpecs.stockCount) : undefined;
+      const sCount = (row.stockCount !== undefined && row.stockCount !== null)
+        ? Number(row.stockCount)
+        : (specStock !== undefined ? specStock : (Boolean(row.inStock) ? 5 : 0));
+      const inSt = Boolean(row.inStock) && sCount > 0;
+
+      return {
+        ...row,
+        shipping: Number(row.shipping) || 0,
+        gallery: typeof row.gallery === 'string' ? JSON.parse(row.gallery || '[]') : (row.gallery || []),
+        specs: parsedSpecs,
+        isNew: Boolean(row.isNew),
+        stockCount: sCount,
+        inStock: inSt
+      };
+    });
     res.json(products);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -167,21 +185,27 @@ app.get('/api/products', async (req, res) => {
 
 app.post('/api/products', requireAdminAuth, async (req, res) => {
   try {
-    const p = req.body;
+    const p = req.body || {};
     const id = p.id || 'p_' + Date.now();
+    const stockVal = p.stockCount !== undefined ? Number(p.stockCount) : (p.inStock ? 5 : 0);
+    const specsObj = typeof p.specs === 'object' && p.specs !== null ? { ...p.specs } : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {});
+    specsObj.stockCount = stockVal;
+
     const productRecord = {
       id,
-      name: p.name,
-      category: p.category,
-      shortDesc: p.shortDesc,
-      desc: p.desc,
-      price: p.price,
-      offerPrice: p.offerPrice,
-      image: p.image,
-      gallery: p.gallery || [],
+      name: p.name || 'Untitled Product',
+      category: p.category || 'General',
+      shortDesc: p.shortDesc || '',
+      desc: p.desc || '',
+      price: Number(p.price) || 0,
+      offerPrice: Number(p.offerPrice) || 0,
+      shipping: Number(p.shipping) || 0,
+      image: p.image || '',
+      gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
-      inStock: Boolean(p.inStock),
-      specs: p.specs || {}
+      inStock: stockVal > 0,
+      stockCount: stockVal,
+      specs: specsObj
     };
     const { data, error } = await supabase.from('products').upsert([productRecord]).select();
     if (error) throw error;
@@ -193,19 +217,25 @@ app.post('/api/products', requireAdminAuth, async (req, res) => {
 
 app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
   try {
-    const p = req.body;
+    const p = req.body || {};
+    const stockVal = p.stockCount !== undefined ? Number(p.stockCount) : (p.inStock ? 5 : 0);
+    const specsObj = typeof p.specs === 'object' && p.specs !== null ? { ...p.specs } : (typeof p.specs === 'string' ? JSON.parse(p.specs || '{}') : {});
+    specsObj.stockCount = stockVal;
+
     const updateRecord = {
-      name: p.name,
-      category: p.category,
-      shortDesc: p.shortDesc,
-      desc: p.desc,
-      price: p.price,
-      offerPrice: p.offerPrice,
-      image: p.image,
-      gallery: p.gallery || [],
+      name: p.name || 'Untitled Product',
+      category: p.category || 'General',
+      shortDesc: p.shortDesc || '',
+      desc: p.desc || '',
+      price: Number(p.price) || 0,
+      offerPrice: Number(p.offerPrice) || 0,
+      shipping: Number(p.shipping) || 0,
+      image: p.image || '',
+      gallery: Array.isArray(p.gallery) ? p.gallery : (typeof p.gallery === 'string' ? JSON.parse(p.gallery || '[]') : []),
       isNew: Boolean(p.isNew),
-      inStock: Boolean(p.inStock),
-      specs: p.specs || {}
+      inStock: stockVal > 0,
+      stockCount: stockVal,
+      specs: specsObj
     };
     const { data, error } = await supabase.from('products').update(updateRecord).eq('id', req.params.id).select();
     if (error) throw error;
@@ -214,6 +244,7 @@ app.put('/api/products/:id', requireAdminAuth, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 app.delete('/api/products/:id', requireAdminAuth, async (req, res) => {
   try {
@@ -365,14 +396,14 @@ app.get('/api/enquiries', requireAdminAuth, async (req, res) => {
 
 app.post('/api/enquiries', async (req, res) => {
   try {
-    const e = req.body;
+    const e = req.body || {};
+    const enquiryMsg = e.message ? e.message : (e.interest ? `Interest: ${e.interest}` : '');
     const enquiryRecord = {
       id: e.id || 'ENQ-' + Date.now(),
       name: e.name || 'Visitor',
       email: e.email || '',
       phone: e.phone || '',
-      interest: e.interest || 'General',
-      message: e.message || '',
+      message: enquiryMsg,
       status: e.status || 'New'
     };
     const { data, error } = await supabase.from('enquiries').insert([enquiryRecord]).select();
@@ -413,6 +444,8 @@ app.get('/api/coupons', requireAdminAuth, async (req, res) => {
     if (error) throw error;
     const coupons = (data || []).map(row => ({
       ...row,
+      discountValue: Number(row.discountValue) || 0,
+      minOrderValue: Number(row.minOrderValue) || 0,
       isActive: Boolean(row.isActive)
     }));
     res.json(coupons);
@@ -421,12 +454,106 @@ app.get('/api/coupons', requireAdminAuth, async (req, res) => {
   }
 });
 
+// Public Validation Endpoint for Storefront Customers
+app.post('/api/coupons/validate', async (req, res) => {
+  try {
+    const { code, amount } = req.body || {};
+    if (!code) {
+      return res.status(400).json({ valid: false, error: 'Coupon code is required.' });
+    }
+    const cleanCode = String(code).trim().toUpperCase();
+    const subtotal = Number(amount) || 0;
+
+    const { data: coupon, error } = await supabase
+      .from('coupons')
+      .select('*')
+      .eq('code', cleanCode)
+      .eq('isActive', true)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!coupon) {
+      return res.status(404).json({ valid: false, error: 'Invalid or inactive promo coupon code.' });
+    }
+
+    const minVal = Number(coupon.minOrderValue) || 0;
+    if (subtotal > 0 && subtotal < minVal) {
+      return res.status(400).json({
+        valid: false,
+        error: `Coupon ${cleanCode} requires a minimum order amount of ₹${minVal.toLocaleString('en-IN')}.`
+      });
+    }
+
+    res.json({
+      valid: true,
+      coupon: {
+        id: coupon.id,
+        code: coupon.code,
+        discountType: coupon.discountType || 'percentage',
+        discountValue: Number(coupon.discountValue) || 0,
+        minOrderValue: minVal
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ valid: false, error: err.message });
+  }
+});
+
+app.post('/api/coupons', requireAdminAuth, async (req, res) => {
+  try {
+    const c = req.body || {};
+    const couponRecord = {
+      id: c.id || 'c_' + Date.now(),
+      code: String(c.code || '').trim().toUpperCase(),
+      discountType: c.discountType === 'fixed' ? 'fixed' : 'percentage',
+      discountValue: Number(c.discountValue) || 0,
+      minOrderValue: Number(c.minOrderValue) || 0,
+      isActive: c.isActive !== undefined ? Boolean(c.isActive) : true
+    };
+    const { data, error } = await supabase.from('coupons').upsert([couponRecord]).select();
+    if (error) throw error;
+    res.json(data ? data[0] : couponRecord);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/coupons/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const c = req.body || {};
+    const updateRecord = {
+      code: String(c.code || '').trim().toUpperCase(),
+      discountType: c.discountType === 'fixed' ? 'fixed' : 'percentage',
+      discountValue: Number(c.discountValue) || 0,
+      minOrderValue: Number(c.minOrderValue) || 0,
+      isActive: c.isActive !== undefined ? Boolean(c.isActive) : true
+    };
+    const { data, error } = await supabase.from('coupons').update(updateRecord).eq('id', req.params.id).select();
+    if (error) throw error;
+    res.json({ message: 'Updated', data });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/coupons/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const { error } = await supabase.from('coupons').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
 // ----------------------------------------------------
 // 9. Razorpay Payment API
 // ----------------------------------------------------
 
 // 9a. Return the Razorpay public key to the frontend
-app.get('/api/payment/key', (req, res) => {
+app.get(['/api/payment/key', '/payment/key'], (req, res) => {
   if (!razorpayInstance) {
     return res.status(503).json({
       error: 'Online payments are not configured. Please add Razorpay API keys in backend/.env'
@@ -436,7 +563,7 @@ app.get('/api/payment/key', (req, res) => {
 });
 
 // 9b. Create a Razorpay Order (Server-verified prices via Supabase)
-app.post('/api/payment/create-order', async (req, res) => {
+app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res) => {
   if (!razorpayInstance) {
     return res.status(503).json({
       error: 'Online payments are not configured. Please add Razorpay API keys in backend/.env'
@@ -454,9 +581,9 @@ app.post('/api/payment/create-order', async (req, res) => {
   if (Array.isArray(items) && items.length > 0) {
     try {
       const itemIds = items.map(i => i.id).filter(Boolean);
-      
+
       if (itemIds.length > 0) {
-        const { data: dbProducts } = await supabase.from('products').select('id, price, offerPrice').in('id', itemIds);
+        const { data: dbProducts } = await supabase.from('products').select('id, price, offerPrice, shipping').in('id', itemIds);
 
         const prodMap = {};
         (dbProducts || []).forEach(p => { prodMap[p.id] = p; });
@@ -469,7 +596,8 @@ app.post('/api/payment/create-order', async (req, res) => {
           const dbProd = prodMap[item.id];
           const unitPrice = dbProd ? (dbProd.offerPrice > 0 ? dbProd.offerPrice : dbProd.price) : (item.price || 0);
           calculatedSubtotal += unitPrice * qty;
-          totalShipping += (item.shipping || 0);
+          const unitShipping = dbProd && dbProd.shipping !== undefined ? Number(dbProd.shipping) : (Number(item.shipping) || 0);
+          totalShipping += unitShipping * qty;
         });
 
         let promoDiscount = 0;
@@ -525,7 +653,7 @@ app.post('/api/payment/create-order', async (req, res) => {
 });
 
 // 9c. Verify payment signature after successful payment
-app.post('/api/payment/verify', async (req, res) => {
+app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
   if (!razorpayInstance) {
     return res.status(503).json({
       error: 'Online payments are not configured. Please add Razorpay API keys in backend/.env'

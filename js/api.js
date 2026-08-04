@@ -13,7 +13,6 @@ window.GalaxyAPI = {
   
   async fetchAllData() {
     try {
-      console.log("Fetching live data from Backend API...");
       const [productsRes, categoriesRes, reviewsRes, storeRes, solutionsRes] = await Promise.all([
         fetch(`${API_BASE}/products`),
         fetch(`${API_BASE}/categories`),
@@ -30,18 +29,31 @@ window.GalaxyAPI = {
       const store = await storeRes.json();
       const solutions = await solutionsRes.json();
 
-      // Update local storage so it acts as a cache/fallback only if valid data returned
+      // Update local storage cache
       if (Array.isArray(products)) localStorage.setItem("gd_products", JSON.stringify(products));
       if (Array.isArray(categories)) localStorage.setItem("gd_categories", JSON.stringify(categories));
       if (Array.isArray(reviews)) localStorage.setItem("gd_reviews", JSON.stringify(reviews));
       if (store && typeof store === 'object' && !store.error) localStorage.setItem("gd_store", JSON.stringify(store));
       if (Array.isArray(solutions)) localStorage.setItem("gd_solutions", JSON.stringify(solutions));
 
-      if (window.GalaxyAppInstance && typeof window.GalaxyAppInstance.updateStoreConfig === 'function') {
-        window.GalaxyAppInstance.updateStoreConfig();
+      // Synchronize in-memory app state and re-render current view with live DB data
+      if (window.GalaxyAppInstance) {
+        if (Array.isArray(products)) {
+          window.GalaxyAppInstance.products = products;
+          if (typeof window.GalaxyAppInstance.syncCartWithProducts === 'function') {
+            window.GalaxyAppInstance.syncCartWithProducts();
+          }
+        }
+        if (Array.isArray(categories)) window.GalaxyAppInstance.categories = categories;
+        if (Array.isArray(reviews)) window.GalaxyAppInstance.reviews = reviews;
+        if (Array.isArray(solutions)) window.GalaxyAppInstance.solutions = solutions;
+        if (store && typeof store === 'object' && !store.error) window.GalaxyAppInstance.updateStoreConfig();
+
+        if (window.GalaxyRouter && typeof window.GalaxyRouter.handleRoute === 'function') {
+          window.GalaxyRouter.handleRoute();
+        }
       }
 
-      console.log("Backend sync successful!");
       return true;
     } catch (error) {
       console.warn("Backend API is offline. Falling back to LocalStorage data.", error);
@@ -75,7 +87,7 @@ window.GalaxyAPI = {
 
   async fetchAdminData() {
     try {
-      const token = sessionStorage.getItem('gd_admin_token') || 'gd_sec_token_98471205918237';
+      const token = sessionStorage.getItem('gd_admin_token') || '';
       const authHeaders = { 'X-Admin-Auth': token };
       const [ordersRes, enquiriesRes, couponsRes] = await Promise.all([
         fetch(`${API_BASE}/orders`, { headers: authHeaders }),
@@ -97,6 +109,59 @@ window.GalaxyAPI = {
       return false;
     }
   },
+
+  async validateCoupon(code, amount = 0) {
+    if (!code) return { valid: false, error: "Please enter a coupon code." };
+    const cleanCode = String(code).trim().toUpperCase();
+
+    // 1. Try Backend Live Validation API
+    try {
+      const res = await fetch(`${API_BASE}/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: cleanCode, amount })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data;
+      }
+      const errData = await res.json();
+      if (errData && errData.error) {
+        return { valid: false, error: errData.error };
+      }
+    } catch (e) {
+      console.warn("Backend coupon validation failed, falling back to local storage.", e);
+    }
+
+    // 2. Offline / Local Storage Fallback
+    const localCoupons = JSON.parse(localStorage.getItem("gd_coupons") || "null") || 
+                         (window.GALAXY_DECOR_DB ? window.GALAXY_DECOR_DB.coupons : []);
+    const matched = (localCoupons || []).find(c => c.code === cleanCode && (c.isActive === undefined || c.isActive === true));
+    
+    if (!matched) {
+      return { valid: false, error: "Invalid or inactive promo coupon code." };
+    }
+
+    const minVal = Number(matched.minOrderValue) || 0;
+    if (amount > 0 && amount < minVal) {
+      return { 
+        valid: false, 
+        error: `Coupon ${cleanCode} requires a minimum order amount of ₹${minVal.toLocaleString('en-IN')}.` 
+      };
+    }
+
+    return {
+      valid: true,
+      coupon: {
+        id: matched.id,
+        code: matched.code,
+        discountType: matched.discountType || (matched.discount ? 'percentage' : 'fixed'),
+        discountValue: Number(matched.discountValue !== undefined ? matched.discountValue : matched.discount) || 0,
+        minOrderValue: minVal
+      }
+    };
+  },
+
 
   // ----------------------------------------------------
   // POST / PUT / DELETE Methods (Admin operations)

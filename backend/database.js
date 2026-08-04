@@ -3,7 +3,8 @@
  * Connects to Supabase Cloud PostgreSQL via @supabase/supabase-js
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { createClient } = require('@supabase/supabase-js');
 
 let supabaseUrl = (process.env.SUPABASE_URL || 'https://your-project-ref.supabase.co').trim();

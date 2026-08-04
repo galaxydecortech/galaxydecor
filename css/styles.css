@@ -41,7 +41,7 @@
   --container-max-width: 1280px;
   --header-height: 80px;
   /* Spacious header */
-  --announcement-height: 40px;
+  --announcement-height: 0px;
 
   --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.02);
   --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.04);
@@ -275,11 +275,11 @@ ol {
 
 /* --- Announcement Bar --- */
 .announcement-bar {
+  display: none !important;
   background-color: var(--color-secondary);
   color: rgba(255, 255, 255, 0.85);
   font-size: 0.75rem;
   height: var(--announcement-height);
-  display: flex;
   align-items: center;
   letter-spacing: 0.05em;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -552,10 +552,16 @@ ol {
 .logo-vector-text .brand-title {
   font-family: var(--font-serif);
   font-size: 1.45rem;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-secondary);
-  letter-spacing: 0.05em;
-  text-transform: capitalize;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.logo-vector-text .brand-title-accent {
+  color: var(--color-accent);
+  font-weight: 700;
+  margin-left: 2px;
 }
 
 .logo-vector-text .brand-divider {
@@ -821,8 +827,7 @@ ol {
   padding: 0.5rem;
 }
 
-/* --- Full-Screen Search Overlay --- */
-/* --- Full-Screen Search Overlay --- */
+/* --- Full-Screen Search Overlay (Luxury Light Theme) --- */
 .search-overlay {
   position: fixed;
   top: 0;
@@ -831,13 +836,14 @@ ol {
   bottom: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  z-index: 5000;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 20000 !important;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 80px;
   transition: opacity 0.3s ease, visibility 0.3s ease;
   opacity: 1;
   visibility: visible;
@@ -850,40 +856,45 @@ ol {
 }
 
 .search-overlay-wrapper {
-  width: 90%;
+  width: 92%;
   max-width: 720px;
   position: relative;
-  padding: 2.5rem 2rem 2rem 2rem;
-  background: #18181a;
+  padding: 1.75rem 2rem 1.75rem 2rem;
+  background: #ffffff;
   border: 1px solid rgba(201, 162, 39, 0.35);
   border-radius: 16px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
 }
 
 .search-overlay-wrapper .close-search-btn {
   position: absolute;
-  top: 1rem;
-  right: 1.2rem;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.05);
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  padding: 0.4rem;
+  color: #475569;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--transition-fast);
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s ease;
 }
 
 .search-overlay-wrapper .close-search-btn:hover {
-  color: var(--color-accent);
-  background: rgba(201, 162, 39, 0.15);
+  color: #ffffff;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   transform: rotate(90deg);
 }
 
 .search-overlay-wrapper .close-search-btn i {
-  width: 22px;
-  height: 22px;
-  stroke-width: 2px;
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.2px;
 }
 
 .search-overlay-content {
@@ -895,25 +906,39 @@ ol {
 .search-form-overlay {
   display: flex;
   align-items: center;
-  border-bottom: 2px solid var(--color-accent);
-  padding-bottom: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
+  background: #f8f6f0 !important;
+  border: 1.5px solid rgba(201, 162, 39, 0.45) !important;
+  border-radius: 12px !important;
+  padding: 0.3rem 0.6rem 0.3rem 1.2rem !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 1.25rem !important;
+  margin-right: 36px !important;
+  transition: border-color 0.25s ease, box-shadow 0.25s ease !important;
 }
 
-.search-form-overlay input {
-  width: 100%;
-  font-size: 1.6rem;
-  font-weight: 400;
-  font-family: var(--font-serif);
-  color: #ffffff;
-  background: transparent;
-  padding: 0.4rem 0;
-  border: none;
-  outline: none;
+.search-form-overlay:focus-within {
+  border-color: var(--color-accent) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.2) !important;
 }
 
-.search-form-overlay input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+.search-form-overlay input,
+#global-search-input {
+  width: 100% !important;
+  font-size: 1.05rem !important;
+  font-weight: 500 !important;
+  font-family: inherit !important;
+  color: #1a1a1a !important;
+  background: transparent !important;
+  padding: 0.6rem 0 !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.search-form-overlay input::placeholder,
+#global-search-input::placeholder {
+  color: #71717a !important;
 }
 
 .search-submit-icon-btn {
@@ -923,17 +948,20 @@ ol {
   padding: 0.5rem;
   cursor: pointer;
   transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .search-submit-icon-btn:hover {
-  color: #ffffff;
+  color: var(--color-accent-hover);
   transform: translateX(4px);
 }
 
 .search-submit-icon-btn i {
-  width: 26px;
-  height: 26px;
-  stroke-width: 2px;
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.2px;
 }
 
 .search-suggestions {
@@ -941,35 +969,45 @@ ol {
   align-items: center;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .suggestion-title {
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
+  color: #64748b;
 }
 
 .suggest-tag {
-  background-color: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.85);
+  background-color: #f1ebd9;
+  color: #1a1a1a;
   font-size: 0.8rem;
   padding: 5px 14px;
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  font-weight: 500;
+  border: 1px solid rgba(201, 162, 39, 0.3);
+  font-weight: 600;
   transition: all var(--transition-fast);
   text-decoration: none;
 }
 
 .suggest-tag:hover {
   background-color: var(--color-accent);
-  color: #000000;
+  color: #ffffff;
   border-color: var(--color-accent);
   transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(201, 162, 39, 0.25);
 }
+
+.search-results-preview {
+  margin-top: 1rem;
+  max-height: 350px;
+  overflow-y: auto;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 0.75rem;
+}
+
 
 .search-results-preview {
   position: absolute;
@@ -977,10 +1015,10 @@ ol {
   left: 0;
   right: 0;
   max-height: 380px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8);
-  border-radius: var(--border-radius);
-  background: #202022;
-  border: 1px solid var(--color-accent-border);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.15);
+  border-radius: 14px;
+  background: #ffffff !important;
+  border: 1px solid rgba(201, 162, 39, 0.35) !important;
   overflow-y: auto;
   z-index: 5010;
 }
@@ -989,14 +1027,15 @@ ol {
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: 0.75rem var(--spacing-md);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
   cursor: pointer;
-  transition: background-color var(--transition-fast);
+  background: #ffffff;
+  transition: background-color 0.2s ease;
 }
 
 .search-preview-item:hover {
-  background-color: rgba(201, 162, 39, 0.12);
+  background-color: #fdfbf7 !important;
 }
 
 .search-preview-item:last-child {
@@ -1007,7 +1046,9 @@ ol {
   width: 50px;
   height: 50px;
   object-fit: cover;
-  border-radius: 6px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #f8f6f0;
 }
 
 .search-preview-info {
@@ -1015,27 +1056,32 @@ ol {
 }
 
 .search-preview-title {
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1a1a1a !important;
+  line-height: 1.3;
 }
 
 .search-preview-cat {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.78rem;
+  color: #64748b !important;
+  margin-top: 2px;
 }
 
 .search-preview-price {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-accent) !important;
 }
 
 .search-no-results {
   padding: 1.5rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: #64748b !important;
+  background: #ffffff !important;
+  font-size: 0.9rem;
 }
+
 
 /* --- Mobile Sidebar Menu --- */
 .mobile-sidebar-overlay {
@@ -1045,7 +1091,7 @@ ol {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 2000;
+  z-index: 20000 !important;
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-smooth);
@@ -1063,7 +1109,7 @@ ol {
   width: 300px;
   height: 100%;
   background-color: #ffffff;
-  z-index: 2001;
+  z-index: 20001 !important;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
@@ -1155,7 +1201,7 @@ ol {
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.5);
-  z-index: 2000;
+  z-index: 20000 !important;
   opacity: 0;
   visibility: hidden;
   transition: all var(--transition-smooth);
@@ -1174,7 +1220,7 @@ ol {
   max-width: 100%;
   height: 100%;
   background-color: #ffffff;
-  z-index: 2001;
+  z-index: 20001 !important;
   display: flex;
   flex-direction: column;
   box-shadow: var(--shadow-lg);
@@ -1349,12 +1395,15 @@ ol {
 /* --- Redesigned Hero Banner (Mockup Matched) --- */
 .hero-section {
   position: relative;
-  height: calc(100vh - 100px);
+  height: calc(100vh - var(--header-height, 80px));
   min-height: 560px;
   background-color: #f5f0e8;
   overflow: hidden;
   display: flex;
   align-items: center;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .hero-slider-container {
@@ -1362,6 +1411,8 @@ ol {
   top: 0; left: 0;
   width: 100%; height: 100%;
   z-index: 1;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .hero-slide {
@@ -1372,8 +1423,9 @@ ol {
   background-position: center right;
   opacity: 0;
   transition: opacity 1.2s ease-in-out;
-  transform: none !important;
-  animation: none !important;
+  transform: translateZ(0) !important;
+  will-change: opacity;
+  backface-visibility: hidden;
 }
 
 .hero-slide.active {
@@ -1524,23 +1576,23 @@ ol {
   display: inline-flex;
   align-items: center;
   background: transparent;
-  color: #B8860B;
+  color: #111111;
   padding: 0.95rem 1.9rem;
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 2px solid #B8860B;
+  border: 2px solid #111111;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
 }
 
 .btn-hero-outline:hover {
-  background: #B8860B;
+  background: #111111;
   color: #ffffff;
-  border-color: #B8860B;
+  border-color: #111111;
 }
 
 /* Bottom slider dots */
@@ -2529,20 +2581,33 @@ textarea.form-control {
 }
 
 /* Price Range Slider */
-.price-range-wrapper {
+.price-range-wrapper,
+.price-slider-wrap {
   padding: 0 var(--spacing-xs);
 }
 
+input[type="range"],
+.range-slider,
 .price-slider-input {
   width: 100%;
-  accent-color: var(--color-accent);
+  accent-color: #B8860B !important;
+  cursor: pointer;
   margin-bottom: var(--spacing-sm);
 }
 
-.price-range-values {
+input[type="range"]::-webkit-slider-thumb {
+  accent-color: #B8860B !important;
+}
+
+input[type="range"]::-moz-range-thumb {
+  background-color: #B8860B !important;
+}
+
+.price-range-values,
+.price-val-display {
   display: flex;
   justify-content: space-between;
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   color: var(--color-secondary-muted);
   font-weight: 500;
 }
@@ -2974,16 +3039,18 @@ textarea.form-control {
 
 .cart-summary-card {
   border: 1px solid var(--color-border);
-  padding: var(--spacing-xl);
-  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  border-radius: var(--border-radius-lg);
   background-color: var(--color-primary-soft);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  overflow: hidden;
 }
 
 .cart-summary-card h3 {
   font-family: var(--font-serif);
-  font-size: 1.5rem;
-  font-weight: 500;
-  margin-bottom: var(--spacing-lg);
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-md);
   color: var(--color-secondary);
   border-bottom: 1px solid var(--color-border);
   padding-bottom: var(--spacing-sm);
@@ -2991,19 +3058,36 @@ textarea.form-control {
 
 .summary-table {
   width: 100%;
-  margin-bottom: var(--spacing-xl);
+  border-collapse: collapse;
+  margin-bottom: var(--spacing-lg);
+  box-sizing: border-box;
 }
 
 .summary-table td {
-  padding: var(--spacing-sm) 0;
-  font-size: 0.9rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.92rem;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.summary-table td:first-child {
+  padding-left: 0.75rem;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.summary-table td:last-child {
+  padding-right: 0.75rem;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .summary-table tr.total-row td {
   border-top: 1px solid var(--color-border);
-  padding-top: var(--spacing-md);
+  padding-top: 1rem;
+  padding-bottom: 0.85rem;
   font-family: var(--font-serif);
-  font-size: 1.4rem;
+  font-size: 1.35rem;
   font-weight: 600;
   color: var(--color-secondary);
 }
@@ -3016,6 +3100,7 @@ textarea.form-control {
   text-align: right;
   font-weight: 500;
   color: var(--color-secondary-soft);
+  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -3462,12 +3547,33 @@ textarea.form-control {
   }
 
   .logo-vector-text {
-    display: none;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    margin-left: 0 !important;
+  }
+
+  .logo-vector-text .brand-title {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    color: #111111 !important;
+    text-transform: uppercase !important;
+    line-height: 1 !important;
+  }
+
+  .logo-vector-text .brand-title-accent {
+    color: var(--color-accent, #C9A227) !important;
+    font-weight: 700 !important;
+  }
+
+  .logo-vector-text .brand-divider,
+  .logo-vector-text .brand-subtitle {
+    display: none !important;
   }
 
   .logo-hybrid-container {
-    width: 44px;
-    height: 44px;
+    display: none !important;
   }
 
   .footer-grid {
@@ -4386,7 +4492,7 @@ textarea:focus {
   -webkit-backdrop-filter: blur(24px) !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
-  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  transition: box-shadow 0.3s ease, background-color 0.3s ease !important;
 }
 
 /* Solid Professional White Navbar across all pages */
@@ -4404,7 +4510,7 @@ textarea:focus {
 /* Sticky/Fixed Navbar while scrolling: permanently locked to top of screen */
 .main-header.scrolled,
 body.home-page .main-header.scrolled {
-  position: fixed !important;
+  position: sticky !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
@@ -4465,9 +4571,12 @@ body.home-page .main-header .mobile-menu-toggle {
 
 /* --- 3. Stunning Full-Screen Hero Banner --- */
 .hero-section {
-  height: calc(100vh - var(--announcement-height)) !important;
+  height: calc(100vh - var(--header-height, 80px)) !important;
   margin-top: 0 !important;
   padding-top: 0 !important;
+  transform: translateZ(0) !important;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 /* Hero overlay & content overrides removed — using main redesigned hero styles */
@@ -4915,12 +5024,20 @@ body.home-page .main-header .mobile-menu-toggle {
 
 .filters-title {
   font-family: var(--font-serif) !important;
-  font-size: 1.2rem !important;
+  font-size: 1.05rem !important;
   font-weight: 600 !important;
   color: #1a1a1a !important;
+  white-space: nowrap !important;
+  line-height: 1.2 !important;
 }
 
 .filters-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  width: 100% !important;
+  gap: 0.5rem !important;
   border-bottom: 1px solid #E5E7EB !important;
   padding-bottom: 1rem !important;
   margin-bottom: 1.25rem !important;
@@ -6336,7 +6453,7 @@ section .btn-black[href="#/contact"] {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 20000 !important;
   /* Stays above everything */
   opacity: 1;
   visibility: visible;
@@ -6741,6 +6858,19 @@ section .btn-black[href="#/contact"] {
   .summary-table {
     font-size: 0.85rem;
     width: 100%;
+    box-sizing: border-box;
+  }
+
+  .summary-table td {
+    padding: 0.65rem 0.6rem !important;
+  }
+
+  .summary-table td:first-child {
+    padding-left: 0.6rem !important;
+  }
+
+  .summary-table td:last-child {
+    padding-right: 0.6rem !important;
   }
 
   #checkout-coupon-form {
@@ -6838,7 +6968,7 @@ section .btn-black[href="#/contact"] {
 
   /* Fix header absolute positioning when announcement bar height varies */
   body.home-page .main-header {
-    top: 35px !important;
+    top: 0 !important;
   }
 
   /* Hero mobile — keep single background, left-align content */
@@ -7146,14 +7276,14 @@ section .btn-black[href="#/contact"] {
   background: #ffffff !important;
   border-radius: 12px !important;
   border: 1px solid #f3f4f6 !important;
-  padding: 1.5rem !important;
+  padding: 0 !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
   position: sticky !important;
-  top: 80px !important;
-  max-height: none !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  scrollbar-width: none !important;
+  top: 90px !important;
+  max-height: calc(100vh - 110px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
 .filters-header {
@@ -7273,48 +7403,90 @@ section .btn-black[href="#/contact"] {
   color: #111827 !important;
 }
 
-/* --- Sort Dropdown --- */
+/* --- Sort Dropdown Theme Styling & Desktop Right Alignment --- */
 .catalog-header {
   display: flex !important;
+  flex-direction: row !important;
   justify-content: space-between !important;
   align-items: center !important;
+  flex-wrap: nowrap !important;
   margin-bottom: 1.5rem !important;
-  background: #fff !important;
-  padding: 1rem 1.5rem !important;
+  background: #ffffff !important;
+  padding: 0.85rem 1.5rem !important;
   border-radius: 12px !important;
   border: 1px solid #f0f0f0 !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02) !important;
 }
 
+.catalog-header-top-row {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: auto !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.sort-select-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  margin-left: auto !important;
+  gap: 10px !important;
+}
+
 .sort-select-wrapper label {
-  font-size: 0.85rem !important;
-  color: #6b7280 !important;
-  margin-right: 8px !important;
-  font-weight: 500 !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--color-secondary-muted) !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+  margin: 0 !important;
 }
 
 .sort-select {
-  padding: 8px 16px !important;
-  border: 1px solid #e5e7eb !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  padding: 0.5rem 2.4rem 0.5rem 1rem !important;
+  border: 1px solid rgba(201, 162, 39, 0.5) !important;
   border-radius: 8px !important;
-  background-color: #f9fafb !important;
-  font-size: 0.9rem !important;
-  color: #111827 !important;
-  font-weight: 500 !important;
+  background-color: #ffffff !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23C9A227' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 12px center !important;
+  background-size: 14px 14px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.88rem !important;
+  color: var(--color-secondary) !important;
+  font-weight: 600 !important;
   cursor: pointer !important;
   outline: none !important;
   transition: all 0.2s ease !important;
-  appearance: auto !important;
-  /* Keep default arrow but style box */
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02) !important;
 }
 
 .sort-select:hover {
-  border-color: #C9A227 !important;
+  border-color: #B8860B !important;
+  box-shadow: 0 2px 8px rgba(184, 134, 11, 0.12) !important;
 }
 
 .sort-select:focus {
-  border-color: #C9A227 !important;
-  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.2) !important;
+  border-color: #B8860B !important;
+  box-shadow: 0 0 0 3px rgba(184, 134, 11, 0.18) !important;
+}
+
+.sort-select option {
+  background-color: #ffffff !important;
+  color: #111111 !important;
+  padding: 10px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.88rem !important;
 }
 
 /* --- Quick fix for filter options border and alignment --- */
@@ -8201,40 +8373,342 @@ body:has(#quickview-modal:not(.hidden)) {
   padding-right: 18px !important;
 }
 
-/* --- Disable internal scrollbars on left filter sidebar --- */
-.filters-sidebar,
-#catalog-filters-sidebar {
-  max-height: none !important;
-  height: auto !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  overflow-x: visible !important;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
+/* --- Filter Drawer Overlay & Sidepanel for Mobile --- */
+.filter-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 20000 !important;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
-.filters-sidebar::-webkit-scrollbar,
-#catalog-filters-sidebar::-webkit-scrollbar {
+.filter-drawer-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.filters-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.filters-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clear-filters-btn {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1.2 !important;
+}
+
+/* --- Filter Sidepanel & Desktop Layout --- */
+.catalog-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr !important;
+  gap: 2rem !important;
+  align-items: flex-start !important;
+}
+
+.filter-drawer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 20000 !important;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.filter-drawer-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.filters-title-wrap {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.filters-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clear-filters-btn {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1.2 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  color: var(--color-secondary-muted) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.05em !important;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.clear-filters-btn:hover {
+  color: var(--color-accent) !important;
+}
+
+.close-filters-btn {
   display: none !important;
-  width: 0 !important;
-  height: 0 !important;
+  background: none;
+  border: none;
+  color: var(--color-secondary);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 50%;
+  transition: background-color 0.2s ease;
+}
+
+.close-filters-btn:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.mobile-filter-actions {
+  display: none !important;
+}
+
+.mobile-filter-open-btn {
+  display: none !important;
+}
+
+.catalog-header-top-row {
+  display: inline-flex !important;
+  align-items: center !important;
+  width: auto !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+
+.filters-header-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--color-accent);
+}
+
+@media (max-width: 768px) {
+  .catalog-header-top-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 8px !important;
+  }
+  .catalog-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .catalog-py-section {
+    padding-top: 0.75rem !important;
+  }
+
+  .mobile-filter-open-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    padding: 0.5rem 0.85rem !important;
+    background: #ffffff !important;
+    border: 1px solid rgba(201, 162, 39, 0.5) !important;
+    border-radius: 8px !important;
+    font-family: var(--font-sans) !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: var(--color-secondary) !important;
+    cursor: pointer !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+  }
+
+  .mobile-filter-open-btn i {
+    color: var(--color-accent) !important;
+    width: 15px !important;
+    height: 15px !important;
+  }
+
+  .catalog-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+    padding: 0.85rem 1rem !important;
+  }
+
+  .filters-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -340px !important;
+    width: 320px !important;
+    max-width: 85vw !important;
+    height: 100% !important;
+    background-color: #ffffff !important;
+    z-index: 20001 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+    transition: left 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  .filters-sidebar.active {
+    left: 0 !important;
+  }
+
+  .filters-header {
+    cursor: pointer !important;
+    user-select: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    padding: 1.25rem 1.5rem !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid var(--color-border) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin-bottom: 0 !important;
+  }
+
+  .filters-body-wrapper {
+    padding: 1.5rem !important;
+    overflow-y: auto !important;
+    flex-grow: 1 !important;
+    display: block !important;
+  }
+
+  .close-filters-btn {
+    display: flex !important;
+  }
+
+  .mobile-filter-actions {
+    display: block !important;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+@media (min-width: 769px) {
+  .close-filters-btn,
+  .mobile-filter-actions,
+  .mobile-filter-open-btn {
+    display: none !important;
+  }
+}
+
+/* --- Filter Sidepanel Scrolling & Scrollbar Styles --- */
+.filters-sidebar,
+#catalog-filters-sidebar {
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+@media (min-width: 769px) {
+  .filters-sidebar,
+  #catalog-filters-sidebar {
+    position: sticky !important;
+    top: calc(var(--header-height, 80px) + 20px) !important;
+    max-height: calc(100vh - 120px) !important;
+    height: auto !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .filters-sidebar,
+  #catalog-filters-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    left: -340px !important;
+    width: 320px !important;
+    max-width: 85vw !important;
+    height: 100vh !important;
+    height: 100% !important;
+    max-height: 100vh !important;
+    z-index: 20001 !important;
+    transition: left 0.35s cubic-bezier(0.25, 1, 0.5, 1) !important;
+  }
+
+  .filters-sidebar.active,
+  #catalog-filters-sidebar.active {
+    left: 0 !important;
+  }
+}
+
+.filters-header {
+  flex-shrink: 0 !important;
+}
+
+.filters-body-wrapper {
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  flex-grow: 1 !important;
+  scrollbar-width: thin !important;
+  scrollbar-color: #D4AF37 rgba(0, 0, 0, 0.04) !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar {
+  width: 6px !important;
+  display: block !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border-radius: 4px !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #D4AF37, #AA7C11) !important;
+  border-radius: 4px !important;
+}
+
+.filters-body-wrapper::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #F5CC50, #D4AF37) !important;
 }
 
 .filter-options {
   max-height: none !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
 }
 
-/* --- Completely Disable Hover Animations & Transitions on Left Sidepanel --- */
-.filters-sidebar,
-#catalog-filters-sidebar,
-.filters-sidebar:hover,
-#catalog-filters-sidebar:hover {
-  animation: none !important;
-  transition: none !important;
-  transform: none !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+/* --- Completely Disable Hover Animations & Transitions on Left Sidepanel on Desktop --- */
+@media (min-width: 769px) {
+  .filters-sidebar,
+  #catalog-filters-sidebar,
+  .filters-sidebar:hover,
+  #catalog-filters-sidebar:hover {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  }
 }
 
 /* --- Footer Styling Utilities & Portal Alignment --- */
@@ -8274,9 +8748,17 @@ body:has(#quickview-modal:not(.hidden)) {
 
 /* --- Collapsible Filter Sidebar (Mobile & Desktop) --- */
 .filters-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.clear-filters-btn {
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  line-height: 1.2 !important;
 }
 
 .filters-header-icon {
@@ -8300,6 +8782,7 @@ body:has(#quickview-modal:not(.hidden)) {
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
+    flex-wrap: nowrap !important;
     padding: 0.75rem 1rem !important;
     background: #ffffff !important;
     border-radius: 12px !important;
@@ -8605,500 +9088,373 @@ body:has(#quickview-modal:not(.hidden)) {
   }
 }
 
-background: rgba(255, 255, 255, 0.07) !important;
-border: 1px solid rgba(255, 255, 255, 0.18) !important;
-color: #ffffff !important;
-border-radius: 8px !important;
-padding: 0.7rem 1rem !important;
-font-size: 0.85rem !important;
-box-shadow: none !important;
-outline: none !important;
+/* --- Individual Product Detail Mobile & Desktop Layout --- */
+.product-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xxl);
+  align-items: start;
+  width: 100%;
 }
 
-.review-modal-box input:focus,
-.review-modal-box select:focus,
-.review-modal-box textarea:focus {
-  border-color: var(--color-accent) !important;
-  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.25) !important;
-  background-color: rgba(255, 255, 255, 0.1) !important;
+.detail-gallery {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 }
 
-.review-modal-box input::placeholder,
-.review-modal-box textarea::placeholder {
-  color: rgba(255, 255, 255, 0.45) !important;
+.qv-main-img-wrapper {
+  width: 100%;
+  max-width: 520px;
+  height: 420px;
+  background: #fdfbf7;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  box-shadow: var(--shadow-sm);
+  position: relative;
 }
 
-.review-modal-box select option {
-  background-color: #18181b !important;
-  color: #ffffff !important;
+.qv-main-img-wrapper .detail-main-img,
+.qv-main-img-wrapper img,
+.qv-main-img-wrapper svg {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
 }
 
-/* Close Button Fixed Sizing & Anti-Vibration */
-.review-modal-box .close-modal-btn,
-#close-review-modal {
-  position: absolute !important;
-  top: 14px !important;
-  right: 14px !important;
-  z-index: 999999 !important;
-  width: 32px !important;
-  height: 32px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-radius: 50% !important;
-  color: rgba(255, 255, 255, 0.7) !important;
-  font-size: 1.25rem !important;
-  line-height: 1 !important;
-  cursor: pointer !important;
-  border: none !important;
-  margin: 0 !important;
-  transform: none !important;
-  transition: background 0.2s ease, color 0.2s ease !important;
+.qv-thumbnail-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 1.5rem;
 }
 
-.review-modal-box .close-modal-btn:hover,
-#close-review-modal:hover {
-  background: rgba(255, 255, 255, 0.2) !important;
-  color: #ffffff !important;
-  transform: none !important;
-  /* Prevents transform scale vibration */
+.qv-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  padding: 4px;
+  background: #fdfbf7;
+  cursor: pointer;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-@media (max-width: 576px) {
-  .testimonial-card {
-    width: 300px;
-    flex: 0 0 300px;
-    padding: 1.2rem;
-  }
-
-  .testimonials-section {
-    padding: 2.5rem 0 !important;
-  }
-}/* --- Fix Mobile View Filter Sidebar & Categories Getting Cut Off --- */
-@media (max-width: 992px) {
-  /* 1. Remove sticky behavior on mobile so the sidebar scrolls naturally without locking and cutting off content */
-  .filters-sidebar,
-  #catalog-filters-sidebar {
-    position: relative !important;
-    top: auto !important;
-    height: auto !important;
-    max-height: none !important;
-    margin-bottom: 1.5rem !important;
-    overflow: visible !important;
-  }
-
-  /* 2. Enable clean scrolling inside the filter dropdown on mobile and ensure ample bottom padding */
-  .filters-body-wrapper {
-    max-height: 75vh !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 1.25rem 1rem 2rem 1rem !important;
-    margin-bottom: 1rem !important;
-  }
-
-  /* 3. Limit category checkbox list height on mobile so Price Limit and Availability stay clearly visible */
-  .filter-group .filter-options {
-    max-height: 220px !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    padding-right: 6px !important;
-    margin-bottom: 0.5rem !important;
-  }
-}
-/* ==========================================================================
-   MASTER FIX: ENABLE FILTER SIDEBAR SCROLLING & PREVENT CONTENT CUTOFF
-   ========================================================================== */
-
-/* 1. For Desktop & Sticky Views: Cap height to screen window & enable internal touch/mouse scrolling */
-.filters-sidebar,
-#catalog-filters-sidebar {
-  max-height: calc(100vh - 100px) !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  scrollbar-width: thin !important;
-  -webkit-overflow-scrolling: touch !important;
-  padding-bottom: 2rem !important;
+.qv-thumb.active {
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 0 10px rgba(201, 162, 39, 0.35);
 }
 
-/* Elegant custom scrollbar styling for filter sidebar */
-.filters-sidebar::-webkit-scrollbar,
-#catalog-filters-sidebar::-webkit-scrollbar {
-  display: block !important;
-  width: 5px !important;
-  height: 5px !important;
-}
-.filters-sidebar::-webkit-scrollbar-track,
-#catalog-filters-sidebar::-webkit-scrollbar-track {
-  background: #f8fafc !important;
-  border-radius: 4px !important;
-}
-.filters-sidebar::-webkit-scrollbar-thumb,
-#catalog-filters-sidebar::-webkit-scrollbar-thumb {
-  background: #C9A227 !important;
-  border-radius: 4px !important;
+.qv-thumb img,
+.qv-thumb svg {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
 }
 
-/* 2. Limit Category Checkbox List Height: Keeps Price Limit & Availability visible immediately */
-.filter-group .filter-options {
-  max-height: 240px !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  padding-right: 8px !important;
-  margin-bottom: 0.75rem !important;
-  scrollbar-width: thin !important;
-  -webkit-overflow-scrolling: touch !important;
-}
-.filter-group .filter-options::-webkit-scrollbar {
-  width: 4px !important;
-}
-.filter-group .filter-options::-webkit-scrollbar-thumb {
-  background: #cbd5e1 !important;
-  border-radius: 4px !important;
+.detail-info-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
-/* 3. Mobile & Tablet Layout (Up to 1024px): Full width, remove sticky lock, smooth internal scrolling */
-@media (max-width: 1024px) {
-  .catalog-layout {
+.detail-meta-cat {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.detail-title {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-secondary);
+  line-height: 1.25;
+  margin-bottom: 12px;
+}
+
+.detail-price-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.detail-price-actual {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.detail-price-original {
+  font-size: 1.1rem;
+  color: var(--color-secondary-muted);
+  text-decoration: line-through;
+}
+
+.detail-discount-badge {
+  background: rgba(201, 162, 39, 0.12);
+  color: var(--color-accent);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.detail-stock-status {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.detail-desc {
+  font-size: 0.92rem;
+  color: var(--color-secondary-muted);
+  line-height: 1.65;
+  margin-bottom: 20px;
+}
+
+.detail-purchase-options {
+  margin-bottom: 24px;
+}
+
+.purchase-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.qty-input-group {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 4px;
+  background: #ffffff;
+}
+
+.qty-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--color-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+
+.qty-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.qty-val {
+  min-width: 32px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.purchase-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.wishlist-detail-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.wishlist-detail-btn:hover,
+.wishlist-detail-btn.wishlisted {
+  border-color: var(--color-accent);
+  background: rgba(201, 162, 39, 0.1);
+}
+
+.specs-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.specs-section h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  font-family: var(--font-serif);
+}
+
+.specs-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.specs-table tr {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.specs-table tr:last-child {
+  border-bottom: none;
+}
+
+.specs-label {
+  padding: 10px 12px 10px 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--color-secondary-muted);
+  width: 35%;
+  vertical-align: top;
+}
+
+.specs-value {
+  padding: 10px 0;
+  font-size: 0.88rem;
+  color: var(--color-secondary);
+  vertical-align: top;
+}
+
+/* --- Mobile Specific Alignment for Individual Product View --- */
+@media (max-width: 768px) {
+  .product-detail-layout {
     grid-template-columns: 1fr !important;
     gap: 1.25rem !important;
   }
 
-  .filters-sidebar,
-  #catalog-filters-sidebar {
-    position: relative !important;
-    top: auto !important;
-    width: 100% !important;
+  .qv-main-img-wrapper {
+    height: 300px !important;
     max-width: 100% !important;
-    max-height: none !important;
-    height: auto !important;
-    margin-bottom: 1.5rem !important;
-    overflow: visible !important;
-    overflow-y: visible !important;
+    padding: 0.85rem !important;
+    margin-bottom: 0.85rem !important;
+    border-radius: 14px !important;
+    position: relative !important;
   }
 
-  .filters-body-wrapper {
-    max-height: 380px !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    padding: 1.25rem 1rem 2.5rem 1rem !important;
-    margin-top: 0.5rem !important;
+  .qv-thumbnail-gallery {
+    gap: 8px !important;
     margin-bottom: 1rem !important;
-    border: 1px solid var(--color-border) !important;
-    border-radius: 12px !important;
-    background: #ffffff !important;
-    box-shadow: var(--shadow-sm) !important;
+    justify-content: center !important;
   }
-}
-/* ==========================================================================
-   FINAL OVERRIDE: OVERSCROLL CONTAINMENT & FORCED CATEGORY SCROLLBAR
-   ========================================================================== */
 
-/* Stop background scroll chaining when scrolling inside filter containers */
-#catalog-filters-sidebar,
-#filters-body-wrapper,
-#category-filter-options,
-.category-scroll-box {
-  overscroll-behavior: contain !important;
-  -webkit-overflow-scrolling: touch !important;
-}
+  .qv-thumb {
+    width: 56px !important;
+    height: 56px !important;
+    border-radius: 8px !important;
+    padding: 3px !important;
+  }
 
-/* Force elegant scrollbar appearance inside the Category box */
-#category-filter-options::-webkit-scrollbar,
-.category-scroll-box::-webkit-scrollbar {
-  display: block !important;
-  width: 6px !important;
-}
-#category-filter-options::-webkit-scrollbar-track,
-.category-scroll-box::-webkit-scrollbar-track {
-  background: #f1f5f9 !important;
-  border-radius: 6px !important;
-}
-#category-filter-options::-webkit-scrollbar-thumb,
-.category-scroll-box::-webkit-scrollbar-thumb {
-  background: #C9A227 !important;
-  border-radius: 6px !important;
-}
+  .detail-title {
+    font-size: 1.4rem !important;
+    margin-bottom: 6px !important;
+  }
 
-/* Ensure mobile and tablet layouts never lock up or clip at bottom */
-@media (max-width: 1200px) {
-  .catalog-layout {
-    display: flex !important;
+  .detail-price-actual {
+    font-size: 1.35rem !important;
+  }
+
+  .detail-price-row {
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .detail-desc {
+    font-size: 0.88rem !important;
+    margin-bottom: 14px !important;
+  }
+
+  .purchase-row {
     flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
     width: 100% !important;
   }
 
-  #catalog-filters-sidebar {
-    position: relative !important;
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    height: auto !important;
-    max-height: none !important;
-    overflow: visible !important;
-    margin-bottom: 1.25rem !important;
+  .qty-input-group {
+    align-self: center !important;
   }
 
-  #filters-body-wrapper {
-    max-height: 75vh !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    overscroll-behavior: contain !important;
-    padding: 1.25rem 1rem 2rem 1rem !important;
-    margin-top: 0.5rem !important;
-    border: 1px solid rgba(201, 162, 39, 0.3) !important;
-    border-radius: 12px !important;
-    background: #ffffff !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
-  }
-}
-/* ==========================================================================
-   FINAL MASTER OVERRIDE: STRICTLY LEFT-ALIGNED FILTER SIDEBAR
-   ========================================================================== */
-
-/* 1. For iPads, Tablets, Laptops & Desktops (min-width: 769px) -> STRICT LEFT COLUMN */
-@media (min-width: 769px) {
-  .catalog-layout {
+  .purchase-actions {
     display: grid !important;
-    grid-template-columns: 280px 1fr !important;
-    gap: 2rem !important;
-    align-items: flex-start !important;
-    flex-direction: unset !important;
-  }
-
-  .filters-sidebar,
-  #catalog-filters-sidebar {
-    position: sticky !important;
-    top: 90px !important;
-    left: 0 !important;
-    width: 280px !important;
-    max-width: 280px !important;
-    max-height: calc(100vh - 110px) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    overscroll-behavior: contain !important;
-    margin: 0 !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
-    border-radius: 12px !important;
-    background: #ffffff !important;
-  }
-}
-
-/* 2. For Mobile Phones (max-width: 768px) -> Flush Left, Zero Center Margins */
-@media (max-width: 768px) {
-  .catalog-layout {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 100% !important;
-    padding: 0 !important;
-  }
-
-  .filters-sidebar,
-  #catalog-filters-sidebar {
-    position: relative !important;
-    top: auto !important;
-    left: 0 !important;
-    right: auto !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    margin: 0 0 1rem 0 !important;
-    padding: 0 !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    overscroll-behavior: contain !important;
-  }
-
-  #filters-header-toggle {
-    margin: 0 !important;
-    width: 100% !important;
-    background: #ffffff !important;
-    border: 1px solid rgba(201, 162, 39, 0.45) !important;
-    border-radius: 10px !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03) !important;
-  }
-}
-/* ==========================================================================
-   OFF-CANVAS SIDE DRAWER FILTER (MATCHING MOBILE NAVBAR MENU)
-   ========================================================================== */
-
-/* 1. Desktop & Laptop Layout (min-width: 993px) - Permanent Left Sidebar Column */
-@media (min-width: 993px) {
-  #open-filter-drawer-btn,
-  #mobile-filter-top-bar {
-    display: none !important;
-  }
-
-  #filter-drawer-overlay,
-  #btn-close-filter-drawer {
-    display: none !important;
-  }
-
-  .catalog-layout {
-    display: grid !important;
-    grid-template-columns: 280px 1fr !important;
-    gap: 2.5rem !important;
-    align-items: flex-start !important;
-  }
-
-  #catalog-filters-sidebar {
-    position: sticky !important;
-    top: 90px !important;
-    left: 0 !important;
-    width: 280px !important;
-    max-width: 280px !important;
-    height: auto !important;
-    max-height: calc(100vh - 110px) !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    margin: 0 !important;
-    background: #ffffff !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--color-border, #e2e8f0) !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.04) !important;
-  }
-}
-
-/* 2. Mobile & Tablet Layout (max-width: 992px) - Slide-out Off-Canvas Drawer */
-@media (max-width: 992px) {
-  #open-filter-drawer-btn,
-  #mobile-filter-top-bar {
-    display: block !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
     width: 100% !important;
   }
 
-  #open-filter-drawer-btn {
-    display: flex !important;
-  }
-  
-  #btn-close-filter-drawer {
-    display: flex !important;
-  }
-
-  .catalog-layout {
-    display: flex !important;
-    flex-direction: column !important;
+  .purchase-actions .btn {
     width: 100% !important;
+    padding: 0.75rem 0.25rem !important;
+    font-size: 0.8rem !important;
+    white-space: nowrap !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    letter-spacing: 0.02em !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
   }
 
-  /* Hide old collapse chevron if any exists */
-  .filter-collapse-chevron {
-    display: none !important;
+  .purchase-actions .btn i {
+    flex-shrink: 0 !important;
+    margin-right: 4px !important;
+    width: 14px !important;
+    height: 14px !important;
   }
 
-  /* Convert sidebar into a fixed slide-out left drawer */
-  #catalog-filters-sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: -380px !important; /* default hidden off-screen to the left */
-    width: 320px !important;
-    max-width: 86vw !important;
-    height: 100vh !important;
-    max-height: 100vh !important;
-    z-index: 99999 !important;
-    background: #ffffff !important;
-    box-shadow: 15px 0 35px rgba(0, 0, 0, 0.25) !important;
-    transition: left 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    margin: 0 !important;
-    border-radius: 0 !important;
-    border: none !important;
-    padding: 1.25rem 1rem 3rem 1rem !important;
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior: contain !important;
-  }
-
-  /* When triggered, smoothly slide into view from left */
-  #catalog-filters-sidebar.drawer-open {
-    left: 0 !important;
-  }
-
-  /* Darkened background overlay on right side */
-  #filter-drawer-overlay {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    background: rgba(0, 0, 0, 0.55) !important;
-    backdrop-filter: blur(2px) !important;
-    z-index: 99998 !important;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.3s ease, visibility 0.3s ease !important;
-  }
-
-  #filter-drawer-overlay.active {
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-  }
-
-  /* Remove any nested box styling inside the drawer */
-  #filters-body-wrapper {
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
+  .wishlist-detail-btn {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    z-index: 10 !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+    border-color: rgba(201, 162, 39, 0.4) !important;
   }
 }
-/* ==========================================================================
-   FINAL OVERRIDE: ONE OVERALL SCROLLBAR FOR ENTIRE FILTER SECTION (MOTHAMA)
-   ========================================================================== */
 
-/* 1. Remove inner scrollbars and box styling from Category options */
-#category-filter-options,
-.filter-group .filter-options,
-.category-scroll-box {
-  max-height: none !important;
-  overflow: visible !important;
-  overflow-y: visible !important;
-  overflow-x: visible !important;
-  border: none !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  padding: 0 !important;
-}
-
-/* 2. Enable one clean overall vertical scrollbar on the entire filter sidebar / drawer */
-#catalog-filters-sidebar {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  -webkit-overflow-scrolling: touch !important;
-  overscroll-behavior: contain !important;
-}
-
-/* 3. Style the overall scrollbar neatly */
-#catalog-filters-sidebar::-webkit-scrollbar {
-  display: block !important;
-  width: 6px !important;
-}
-
-#catalog-filters-sidebar::-webkit-scrollbar-track {
-  background: #f8fafc !important;
-}
-
-#catalog-filters-sidebar::-webkit-scrollbar-thumb {
-  background: #cbd5e1 !important;
-  border-radius: 6px !important;
-}
-
-#catalog-filters-sidebar:hover::-webkit-scrollbar-thumb {
-  background: #C9A227 !important;
-}
-
-/* 4. Guarantee full screen height on mobile so the single overall scrollbar scrolls smoothly through everything */
-@media (max-width: 992px) {
-  #catalog-filters-sidebar {
-    height: 100vh !important;
-    max-height: 100vh !important;
-    padding-bottom: 4rem !important; /* Extra bottom padding so Price Limit and Availability are easily reachable */
+@media (max-width: 380px) {
+  .purchase-actions .btn {
+    font-size: 0.72rem !important;
+    padding: 0.75rem 0.15rem !important;
+    letter-spacing: 0 !important;
   }
 }
+

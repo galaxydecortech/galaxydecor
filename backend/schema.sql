@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS public.products (
     "desc" TEXT,
     price NUMERIC NOT NULL DEFAULT 0,
     "offerPrice" NUMERIC DEFAULT 0,
+    shipping NUMERIC DEFAULT 0,
     image TEXT,
     gallery JSONB DEFAULT '[]'::jsonb,
     "isNew" BOOLEAN DEFAULT false,
@@ -33,6 +34,10 @@ CREATE TABLE IF NOT EXISTS public.products (
     specs JSONB DEFAULT '{}'::jsonb,
     "createdAt" TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Ensure shipping column exists on existing tables
+ALTER TABLE public.products ADD COLUMN IF NOT EXISTS shipping NUMERIC DEFAULT 0;
+
 
 -- 4. Interior Solutions Table
 CREATE TABLE IF NOT EXISTS public.interior_solutions (
@@ -98,17 +103,27 @@ ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.enquiries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
 
--- Allow Public SELECT (Read) Policies
-CREATE POLICY "Public read products" ON public.products FOR SELECT USING (true);
-CREATE POLICY "Public read categories" ON public.categories FOR SELECT USING (true);
-CREATE POLICY "Public read store_config" ON public.store_config FOR SELECT USING (true);
-CREATE POLICY "Public read interior_solutions" ON public.interior_solutions FOR SELECT USING (true);
-CREATE POLICY "Public read reviews" ON public.reviews FOR SELECT USING (true);
-CREATE POLICY "Public insert orders" ON public.orders FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public insert enquiries" ON public.enquiries FOR INSERT WITH CHECK (true);
+-- Allow Public Read & Full Write Access for API & Seeding
+DROP POLICY IF EXISTS "Full access store_config" ON public.store_config;
+CREATE POLICY "Full access store_config" ON public.store_config FOR ALL USING (true) WITH CHECK (true);
 
--- Allow Full Access via Service Role Key (Backend API access)
-CREATE POLICY "Service role full access products" ON public.products USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access categories" ON public.categories USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access orders" ON public.orders USING (true) WITH CHECK (true);
-CREATE POLICY "Service role full access enquiries" ON public.enquiries USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Full access categories" ON public.categories;
+CREATE POLICY "Full access categories" ON public.categories FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Full access products" ON public.products;
+CREATE POLICY "Full access products" ON public.products FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Full access interior_solutions" ON public.interior_solutions;
+CREATE POLICY "Full access interior_solutions" ON public.interior_solutions FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Full access reviews" ON public.reviews;
+CREATE POLICY "Full access reviews" ON public.reviews FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Full access orders" ON public.orders;
+CREATE POLICY "Full access orders" ON public.orders FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Full access enquiries" ON public.enquiries;
+CREATE POLICY "Full access enquiries" ON public.enquiries FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Full access coupons" ON public.coupons;
+CREATE POLICY "Full access coupons" ON public.coupons FOR ALL USING (true) WITH CHECK (true);

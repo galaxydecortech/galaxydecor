@@ -144,9 +144,72 @@ class ECommerceApp {
     this.initGlobalEvents();
     this.updateBadges();
 
+    // Sync initial cart items with loaded product specs/shipping
+    this.syncCartWithProducts();
+
     // Register SPA Routes with GalaxyRouter
     this.registerRoutes();
   }
+
+  isOutOfStock(p) {
+    if (!p) return true;
+    if (p.inStock === false) return true;
+    const count = (p.stockCount !== undefined && p.stockCount !== null)
+      ? Number(p.stockCount)
+      : ((p.specs && p.specs.stockCount !== undefined) ? Number(p.specs.stockCount) : null);
+    if (count !== null && count <= 0) return true;
+    return false;
+  }
+
+  getAvailableStock(p) {
+    if (!p || this.isOutOfStock(p)) return 0;
+    const count = (p.stockCount !== undefined && p.stockCount !== null)
+      ? Number(p.stockCount)
+      : ((p.specs && p.specs.stockCount !== undefined) ? Number(p.specs.stockCount) : null);
+    if (count !== null) return Math.max(0, count);
+    return 5;
+  }
+
+  syncCartWithProducts() {
+    if (!Array.isArray(this.cart) || !Array.isArray(this.products)) return;
+    let changed = false;
+    let updatedCart = [];
+
+    this.cart.forEach(item => {
+      if (item && item.product && item.product.id) {
+        const fresh = this.products.find(p => p.id === item.product.id);
+        if (fresh) {
+          item.product = { ...fresh };
+          
+          const isOut = this.isOutOfStock(fresh);
+          const availableStock = this.getAvailableStock(fresh);
+
+          if (isOut || availableStock <= 0) {
+            changed = true;
+            window.GalaxyUtils.showToast(`⚠️ "${fresh.name}" is Out of Stock and was removed from your bag.`, "warning");
+            return;
+          }
+
+          if (item.quantity > availableStock) {
+            item.quantity = availableStock;
+            changed = true;
+            window.GalaxyUtils.showToast(`⚠️ Quantity of "${fresh.name}" was adjusted to available stock limit of ${availableStock} unit(s).`, "warning");
+          }
+
+          updatedCart.push(item);
+        } else {
+          updatedCart.push(item);
+        }
+      }
+    });
+
+    this.cart = updatedCart;
+    if (changed) {
+      localStorage.setItem("gd_cart", JSON.stringify(this.cart));
+      this.updateBadges();
+    }
+  }
+
 
   updateStoreConfig() {
     let storedConfig = null;
@@ -217,20 +280,56 @@ class ECommerceApp {
 
   // --- Cart & Wishlist Operations ---
   addToCart(productId, quantity = 1, showFeedback = true) {
+    try {
+      const freshProds = JSON.parse(localStorage.getItem("gd_products"));
+      if (Array.isArray(freshProds) && freshProds.length > 0) {
+        this.products = freshProds;
+      }
+    } catch (e) {}
+
     let product = this.products.find(p => p.id === productId);
-    if (!product) return;
+    if (!product) return false;
+
+    const isOut = this.isOutOfStock(product);
+    const availableStock = this.getAvailableStock(product);
+
+    if (isOut || availableStock <= 0) {
+      window.GalaxyUtils.showToast(`⚠️ Sorry, "${product.name}" is currently Out of Stock!`, "error");
+      return false;
+    }
 
     let existingItem = this.cart.find(item => item.product.id === productId);
+    let currentInCart = existingItem ? existingItem.quantity : 0;
+    let targetQty = currentInCart + quantity;
+
+    if (targetQty > availableStock) {
+      if (currentInCart >= availableStock) {
+        window.GalaxyUtils.showToast(`⚠️ Cannot add more: Maximum stock limit of ${availableStock} unit(s) reached for "${product.name}".`, "warning");
+        return false;
+      } else {
+        let allowedToAdd = availableStock - currentInCart;
+        if (existingItem) {
+          existingItem.quantity = availableStock;
+        } else {
+          this.cart.push({ product, quantity: availableStock });
+        }
+        this.saveCart();
+        window.GalaxyUtils.showToast(`⚠️ Only ${availableStock} unit(s) available in stock for "${product.name}". Added ${allowedToAdd} unit(s) up to stock limit.`, "warning");
+        return true;
+      }
+    }
+
     if (existingItem) {
-      existingItem.quantity += quantity;
+      existingItem.quantity = targetQty;
     } else {
-      this.cart.push({ product, quantity });
+      this.cart.push({ product, quantity: targetQty });
     }
 
     this.saveCart();
     if (showFeedback) {
       window.GalaxyUtils.showToast(`"${product.name}" added to shopping bag.`);
     }
+    return true;
   }
 
   removeFromCart(productId) {
@@ -244,12 +343,41 @@ class ECommerceApp {
       this.removeFromCart(productId);
       return;
     }
+
+    try {
+      const freshProds = JSON.parse(localStorage.getItem("gd_products"));
+      if (Array.isArray(freshProds) && freshProds.length > 0) {
+        this.products = freshProds;
+      }
+    } catch (e) {}
+
     let item = this.cart.find(item => item.product.id === productId);
-    if (item) {
-      item.quantity = newQty;
-      this.saveCart();
+    if (!item) return;
+
+    let product = this.products.find(p => p.id === productId) || item.product;
+    const availableStock = this.getAvailableStock(product);
+    const isOut = this.isOutOfStock(product);
+
+    if (isOut || availableStock <= 0) {
+      this.removeFromCart(productId);
+      window.GalaxyUtils.showToast(`⚠️ "${product.name}" is Out of Stock and was removed from your bag.`, "error");
+      return;
     }
+
+    if (newQty > availableStock) {
+      item.quantity = availableStock;
+      this.saveCart();
+      window.GalaxyUtils.showToast(`⚠️ Cannot exceed available stock limit of ${availableStock} unit(s) for "${product.name}".`, "warning");
+      if (window.location.pathname.startsWith("/cart")) {
+        this.renderCartPage();
+      }
+      return;
+    }
+
+    item.quantity = newQty;
+    this.saveCart();
   }
+
 
   toggleWishlist(productId) {
     let index = this.wishlist.indexOf(productId);
@@ -507,7 +635,7 @@ class ECommerceApp {
     const src = (product.image.startsWith("http://") || product.image.startsWith("https://") || product.image.startsWith("data:"))
       ? product.image
       : `/assets/products/${product.image}`;
-    return `<img src="${src}" alt="${product.name}" class="${className}" loading="lazy" onerror="this.outerHTML='<div class=\\'${className} fallback-svg-container\\'>'+window.GalaxyUtils.getPremiumFurnitureSVG('${product.category.replace(/'/g, "\\'")}', '${product.name.replace(/'/g, "\\'")}')+'</div>'">`;
+    return `<img src="${src}" alt="${product.name}" class="${className}" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=\\'${className} fallback-svg-container\\'>'+window.GalaxyUtils.getPremiumFurnitureSVG('${product.category.replace(/'/g, "\\'")}', '${product.name.replace(/'/g, "\\'")}')+'</div>'">`;
   }
 
   getCategoryName(catId) {
@@ -1307,19 +1435,19 @@ class ECommerceApp {
         
         <div class="about-gallery-grid">
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=600&q=80" alt="Luxury Living Room Sourcing">
+            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=600&q=80" alt="Luxury Living Room Sourcing" loading="lazy" decoding="async">
             <div class="gallery-item-label">Luxury Living Curation</div>
           </div>
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&w=600&q=80" alt="Marble Dining Sets">
+            <img src="https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&w=600&q=80" alt="Marble Dining Sets" loading="lazy" decoding="async">
             <div class="gallery-item-label">Italian Marble Dining</div>
           </div>
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80" alt="Premium Bedroom Collection">
+            <img src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80" alt="Premium Bedroom Collection" loading="lazy" decoding="async">
             <div class="gallery-item-label">Imported Bedroom Sets</div>
           </div>
           <div class="gallery-item-wrap fade-in">
-            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80" alt="Bespoke Metal Accents">
+            <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80" alt="Bespoke Metal Accents" loading="lazy" decoding="async">
             <div class="gallery-item-label">Metallic Accent Details</div>
           </div>
         </div>
@@ -1356,33 +1484,47 @@ class ECommerceApp {
 
   // --- 4. Render PRODUCTS CATALOG ---
   renderProducts(queryParams) {
-    let activeCategory = queryParams.category || "";
+    let rawCategory = queryParams.category || "";
     let searchQuery = queryParams.search || "";
 
-    // Set up search terms filters inside App Root
-    this.appRoot.innerHTML = `
-      <section class="py-section container">
-        <!-- Mobile Filter Drawer Trigger & Overlay -->
-        <div class="mobile-filter-top-bar" id="mobile-filter-top-bar">
-          <button class="btn btn-outline-gold w-100 mobile-filter-btn" id="open-filter-drawer-btn" style="display: none; justify-content: center; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; margin-bottom: 1.25rem; width: 100%; border: 1.5px solid var(--color-accent, #C9A227); background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; color: #1e293b;">
-            <i data-lucide="sliders-horizontal" style="width: 18px; height: 18px; color: #C9A227;"></i>
-            <span>Filter Selection</span>
-          </button>
-        </div>
-        <div class="mobile-sidebar-overlay" id="filter-drawer-overlay" style="z-index: 99998;"></div>
+    // Infer category from searchQuery if rawCategory is missing
+    if (!rawCategory && searchQuery) {
+      const qLower = searchQuery.toLowerCase().trim();
+      if (qLower.includes("sofa") || qLower.includes("living")) rawCategory = "living-room";
+      else if (qLower.includes("dining") || qLower.includes("table")) rawCategory = "dining";
+      else if (qLower.includes("fountain")) rawCategory = "fountains";
+      else if (qLower.includes("desk") || qLower.includes("office")) rawCategory = "office";
+      else if (qLower.includes("vase")) rawCategory = "vases";
+      else if (qLower.includes("bedroom") || qLower.includes("bed")) rawCategory = "bedroom";
+      else if (qLower.includes("decor")) rawCategory = "decor-accessories";
+      else if (qLower.includes("gift")) rawCategory = "gift-items";
+      else if (qLower.includes("showpiece")) rawCategory = "showpieces";
+    }
 
+    let activeCategory = rawCategory === "decor" ? "decor-accessories" : rawCategory;
+
+    let selectedCategories = [];
+    if (rawCategory === "decor") {
+      selectedCategories = ["decor-accessories", "gift-items", "showpieces", "vases", "fountains"];
+    } else if (rawCategory) {
+      selectedCategories = [rawCategory];
+    }
+
+
+    this.appRoot.innerHTML = `
+      <section class="py-section catalog-py-section container">
         <div class="catalog-layout">
-          <!-- Sidebar Filters (Off-canvas on mobile) -->
+          <!-- Sidebar Filters -->
           <aside class="filters-sidebar" id="catalog-filters-sidebar">
-            <div class="filters-header" id="filters-header-toggle" style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding-bottom: 0.75rem; border-bottom: 1px solid rgba(0,0,0,0.08); margin-bottom: 1rem;">
-              <div class="filters-title-wrap" style="display: flex; align-items: center; gap: 0.5rem;">
-                <i data-lucide="sliders-horizontal" class="filters-header-icon" style="color: #C9A227;"></i>
-                <span class="filters-title" style="font-size: 1.1rem; font-weight: 600;">Filter Selection</span>
+            <div class="filters-header" id="filters-header-toggle">
+              <div class="filters-title-wrap">
+                <i data-lucide="sliders-horizontal" class="filters-header-icon"></i>
+                <span class="filters-title">Filter Selection</span>
               </div>
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <button class="clear-filters-btn" id="btn-clear-filters" style="background: none; border: none; font-size: 0.85rem; color: #64748b; text-decoration: underline; cursor: pointer; font-weight: 500;">Clear All</button>
-                <button class="close-filter-btn" id="btn-close-filter-drawer" style="display: none; background: #f1f5f9; border: none; border-radius: 50%; width: 32px; height: 32px; align-items: center; justify-content: center; cursor: pointer; color: #334155; transition: all 0.2s ease;" aria-label="Close filters">
-                  <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+              <div class="filters-header-actions">
+                <button class="clear-filters-btn" id="btn-clear-filters">Clear All</button>
+                <button class="close-filters-btn" id="btn-close-filters" aria-label="Close Filters">
+                  <i data-lucide="x"></i>
                 </button>
               </div>
             </div>
@@ -1394,7 +1536,7 @@ class ECommerceApp {
                 <div class="filter-options" id="category-filter-options">
                   ${this.categories.map(c => `
                     <label class="custom-checkbox">
-                      <input type="checkbox" name="f-category" value="${c.id}" ${activeCategory === c.id ? "checked" : ""}>
+                      <input type="checkbox" name="f-category" value="${c.id}" ${selectedCategories.includes(c.id) ? "checked" : ""}>
                       <span class="checkmark"></span>
                       <span class="checkbox-text">${c.name}</span>
                     </label>
@@ -1402,19 +1544,19 @@ class ECommerceApp {
                 </div>
               </div>
 
-              <!-- Price Filter -->
+
+              <!-- Price Limit Filter -->
               <div class="filter-group">
                 <h4 class="filter-group-title">Price Limit</h4>
-                <div class="price-range-wrapper">
-                  <input type="range" id="filter-price-slider" class="price-slider-input" min="0" max="150000" step="5000" value="150000">
-                  <div class="price-range-values">
-                    <span>₹0</span>
-                    <span id="price-slider-value">Max: ₹1,50,000</span>
+                <div class="price-slider-wrap">
+                  <input type="range" id="filter-price-range" min="0" max="150000" step="1000" value="150000" class="range-slider">
+                  <div class="price-val-display">
+                    Max: <strong id="filter-price-val">₹1,50,000</strong>
                   </div>
                 </div>
               </div>
 
-              <!-- Availability Filter -->
+              <!-- Availability -->
               <div class="filter-group">
                 <h4 class="filter-group-title">Availability</h4>
                 <div class="filter-options">
@@ -1425,14 +1567,24 @@ class ECommerceApp {
                   </label>
                 </div>
               </div>
+              
+              <div class="mobile-filter-actions">
+                <button type="button" class="btn btn-gold btn-block" id="btn-apply-filters-mobile" style="width:100%;">APPLY FILTERS</button>
+              </div>
             </div>
           </aside>
 
           <!-- Catalog Main Column -->
           <div>
             <div class="catalog-header">
-              <div class="results-count" id="catalog-results-count">
-                Showing all <strong>${this.products.length}</strong> luxury articles
+              <div class="catalog-header-top-row">
+                <div class="results-count" id="catalog-results-count">
+                  Showing all <strong>${this.products.length}</strong> luxury articles
+                </div>
+                <button type="button" class="mobile-filter-open-btn" id="btn-open-mobile-filters">
+                  <i data-lucide="sliders-horizontal"></i>
+                  <span>Filter Selection</span>
+                </button>
               </div>
               
               <div class="sort-select-wrapper">
@@ -1470,54 +1622,64 @@ class ECommerceApp {
     const countEl = document.getElementById("catalog-results-count");
 
     const categoryCheckboxes = document.querySelectorAll('input[name="f-category"]');
-    const priceSlider = document.getElementById("filter-price-slider");
-    const priceLabel = document.getElementById("price-slider-value");
+    const priceSlider = document.getElementById("filter-price-slider") || document.getElementById("filter-price-range");
+    const priceLabel = document.getElementById("price-slider-value") || document.getElementById("filter-price-val");
     const stockCheckbox = document.getElementById("filter-stock-only");
     const sortSelect = document.getElementById("catalog-sort");
     const clearBtn = document.getElementById("btn-clear-filters");
 
-    // Off-Canvas Mobile Filter Drawer Controllers
-    const openFilterBtn = document.getElementById("open-filter-drawer-btn");
-    const closeFilterBtn = document.getElementById("btn-close-filter-drawer");
+    // Collapsible Mobile Filter Sidepanel Listener
     const filterSidebar = document.getElementById("catalog-filters-sidebar");
-    const filterOverlay = document.getElementById("filter-drawer-overlay");
     const filterHeader = document.getElementById("filters-header-toggle");
+    const filterOverlay = document.getElementById("filter-drawer-overlay");
+    const closeFilterBtn = document.getElementById("btn-close-filters");
+    const applyFilterBtn = document.getElementById("btn-apply-filters-mobile");
 
-    const openDrawer = () => {
-      if (filterSidebar) filterSidebar.classList.add("drawer-open");
-      if (filterOverlay) filterOverlay.classList.add("active");
-      document.body.style.overflow = "hidden"; // Prevent background scroll chaining
+    const openFilters = () => {
+      if (window.innerWidth <= 768) {
+        if (filterSidebar) filterSidebar.classList.add("active");
+        if (filterOverlay) filterOverlay.classList.add("active");
+        document.body.style.overflow = "hidden";
+      }
     };
 
-    const closeDrawer = () => {
-      if (filterSidebar) filterSidebar.classList.remove("drawer-open");
+    const closeFilters = () => {
+      if (filterSidebar) filterSidebar.classList.remove("active");
       if (filterOverlay) filterOverlay.classList.remove("active");
       document.body.style.overflow = "";
     };
 
-    if (openFilterBtn) openFilterBtn.addEventListener("click", openDrawer);
-    if (closeFilterBtn) closeFilterBtn.addEventListener("click", (e) => { e.stopPropagation(); closeDrawer(); });
-    if (filterOverlay) filterOverlay.addEventListener("click", closeDrawer);
-    
-    if (filterHeader && filterSidebar) {
+    if (filterHeader) {
       filterHeader.addEventListener("click", (e) => {
-        if (e.target.closest("#btn-clear-filters") || e.target.closest("#btn-close-filter-drawer")) return;
-        if (window.innerWidth <= 992 && !filterSidebar.classList.contains("drawer-open")) {
-          openDrawer();
-        } else if (window.innerWidth <= 992 && filterSidebar.classList.contains("drawer-open")) {
-          closeDrawer();
+        if (e.target.closest("#btn-clear-filters") || e.target.closest("#btn-close-filters")) return;
+        if (window.innerWidth <= 768) {
+          openFilters();
         }
       });
     }
 
+    if (closeFilterBtn) closeFilterBtn.addEventListener("click", closeFilters);
+    if (filterOverlay) filterOverlay.addEventListener("click", closeFilters);
+    if (applyFilterBtn) applyFilterBtn.addEventListener("click", closeFilters);
+    const openMobileFilterBtn = document.getElementById("btn-open-mobile-filters");
+    if (openMobileFilterBtn) openMobileFilterBtn.addEventListener("click", openFilters);
+
+    let initCats = [];
+    if (initialCategory === "decor") {
+      initCats = ["decor-accessories", "gift-items", "showpieces", "vases", "fountains"];
+    } else if (initialCategory) {
+      initCats = [initialCategory];
+    }
+
     // Local filter state
     const filterState = {
-      categories: initialCategory ? [initialCategory] : [],
+      categories: initCats,
       maxPrice: 150000,
       stockOnly: false,
       sortBy: "latest",
       search: searchQuery
     };
+
 
     // Update filter tags
     const applyFiltersAndRender = () => {
@@ -1581,42 +1743,50 @@ class ECommerceApp {
       });
     });
 
-    priceSlider.addEventListener("input", (e) => {
-      let val = parseInt(e.target.value);
-      priceLabel.textContent = `Max: ${window.GalaxyUtils.formatCurrency(val)}`;
-    });
+    if (priceSlider) {
+      priceSlider.addEventListener("input", (e) => {
+        let val = parseInt(e.target.value);
+        if (priceLabel) priceLabel.textContent = `Max: ${window.GalaxyUtils ? window.GalaxyUtils.formatCurrency(val) : '₹' + val.toLocaleString('en-IN')}`;
+      });
 
-    priceSlider.addEventListener("change", (e) => {
-      let val = parseInt(e.target.value);
-      filterState.maxPrice = val;
-      applyFiltersAndRender();
-    });
+      priceSlider.addEventListener("change", (e) => {
+        let val = parseInt(e.target.value);
+        filterState.maxPrice = val;
+        applyFiltersAndRender();
+      });
+    }
 
-    stockCheckbox.addEventListener("change", (e) => {
-      filterState.stockOnly = e.target.checked;
-      applyFiltersAndRender();
-    });
+    if (stockCheckbox) {
+      stockCheckbox.addEventListener("change", (e) => {
+        filterState.stockOnly = e.target.checked;
+        applyFiltersAndRender();
+      });
+    }
 
-    sortSelect.addEventListener("change", (e) => {
-      filterState.sortBy = e.target.value;
-      applyFiltersAndRender();
-    });
+    if (sortSelect) {
+      sortSelect.addEventListener("change", (e) => {
+        filterState.sortBy = e.target.value;
+        applyFiltersAndRender();
+      });
+    }
 
-    clearBtn.addEventListener("click", () => {
-      categoryCheckboxes.forEach(c => c.checked = false);
-      priceSlider.value = 150000;
-      priceLabel.textContent = "Max: ₹1,50,000";
-      stockCheckbox.checked = false;
-      sortSelect.value = "latest";
+    if (clearBtn) {
+      clearBtn.addEventListener("click", () => {
+        categoryCheckboxes.forEach(c => c.checked = false);
+        if (priceSlider) priceSlider.value = 150000;
+        if (priceLabel) priceLabel.textContent = "Max: ₹1,50,000";
+        if (stockCheckbox) stockCheckbox.checked = false;
+        if (sortSelect) sortSelect.value = "latest";
 
-      filterState.categories = [];
-      filterState.maxPrice = 150000;
-      filterState.stockOnly = false;
-      filterState.sortBy = "latest";
-      filterState.search = "";
+        filterState.categories = [];
+        filterState.maxPrice = 150000;
+        filterState.stockOnly = false;
+        filterState.sortBy = "latest";
+        filterState.search = "";
 
-      applyFiltersAndRender();
-    });
+        applyFiltersAndRender();
+      });
+    }
 
     // Run first render
     applyFiltersAndRender();
@@ -1645,13 +1815,13 @@ class ECommerceApp {
         </div>
         <div class="product-detail-layout">
           <!-- Gallery -->
-          <div class="detail-gallery" style="display:flex !important; flex-direction:column !important; align-items:center !important; width:100% !important;">
-            <div class="qv-main-img-wrapper" id="detail-main-image-wrapper" style="width:100% !important; max-width:none !important; margin-bottom:20px !important;">
+          <div class="detail-gallery">
+            <div class="qv-main-img-wrapper" id="detail-main-image-wrapper">
               ${this.renderProductImageHTML(product, "detail-main-img")}
             </div>
             
             <!-- thumbnails -->
-            <div class="qv-thumbnail-gallery" style="width:100% !important; margin-bottom:20px !important;">
+            <div class="qv-thumbnail-gallery">
               ${images.map((img, i) => {
       const src = (img && !img.startsWith("default_") && !img.startsWith("placeholder"))
         ? ((img.startsWith("http") || img.startsWith("data:")) ? img : `/assets/products/${img}`)
@@ -1675,17 +1845,17 @@ class ECommerceApp {
           </div>
 
           <!-- Options -->
-          <div>
+          <div class="detail-info-wrapper">
             <span class="detail-meta-cat">${this.getCategoryName(product.category)}</span>
             <h1 class="detail-title">${product.name}</h1>
 
-            <div class="detail-price-row" style="margin-bottom: var(--spacing-sm); border-bottom: none;">
+            <div class="detail-price-row">
               <span class="detail-price-actual">${window.GalaxyUtils.formatCurrency(product.offerPrice || product.price)}</span>
               ${product.offerPrice ? `<span class="detail-price-original">${window.GalaxyUtils.formatCurrency(product.price)}</span>` : ""}
               ${product.offerPrice ? `<span class="detail-discount-badge">-${Math.round((product.price - product.offerPrice) / product.price * 100)}% DISCOUNT</span>` : ""}
             </div>
 
-            <div class="detail-stock-status" style="margin-bottom: var(--spacing-md); font-weight:600; font-size:1rem; color: ${product.inStock ? 'var(--color-success)' : 'var(--color-error)'}; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: var(--spacing-sm);">
+            <div class="detail-stock-status" style="color: ${product.inStock ? 'var(--color-success)' : 'var(--color-error)'};">
               ${product.inStock ? (product.stockCount !== undefined ? `✅ Only ${product.stockCount} left in stock` : "✅ In Stock") : "❌ Out of Stock"}
             </div>
 
@@ -1700,15 +1870,17 @@ class ECommerceApp {
                 </div>
                 
                 <div class="purchase-actions">
-                  <button class="btn btn-gold" id="btn-detail-add-cart" ${!product.inStock ? "disabled style='opacity:0.6; cursor:not-allowed;'" : ""}><i data-lucide="shopping-bag" style="width:16px;height:16px;margin-right:8px;"></i> ${!product.inStock ? "Sold Out" : "Add To Cart"}</button>
+                  <button class="btn btn-gold" id="btn-detail-add-cart" ${!product.inStock ? "disabled style='opacity:0.6; cursor:not-allowed;'" : ""}><i data-lucide="shopping-bag" style="width:15px;height:15px;margin-right:5px;flex-shrink:0;"></i> ${!product.inStock ? "Sold Out" : "Add To Cart"}</button>
                   <button class="btn btn-black" id="btn-detail-buy" ${!product.inStock ? "disabled style='opacity:0.6; cursor:not-allowed;'" : ""}>Buy Now</button>
                 </div>
+
 
                 <button class="wishlist-detail-btn ${isWish ? "wishlisted" : ""}" id="btn-detail-wish" aria-label="Toggle Wishlist">
                   <i data-lucide="heart" style="width: 20px; height: 20px; ${isWish ? "fill: #C9A227; stroke: #C9A227;" : ""}"></i>
                 </button>
               </div>
             </div>
+
 
             <!-- Specifications Table -->
             <div class="specs-section">
@@ -1719,7 +1891,7 @@ class ECommerceApp {
       "Dimensions": "Standard Showroom Fit",
       "Upholstery": "Premium Fabric Sourcing",
       "Warranty": "1 Year Manufacturer Defect Sourcing Warranty",
-      "Shipping": "Safe local Erode shipping and expert assembly included"
+      "Shipping": product.shipping > 0 ? "+ " + window.GalaxyUtils.formatCurrency(product.shipping) + " Shipping Surcharge" : "Safe local Erode shipping and expert assembly included"
     }).map(([lbl, val]) => `
                     <tr>
                       <td class="specs-label">${lbl}</td>
@@ -1911,18 +2083,27 @@ class ECommerceApp {
 
     // Coupon logic
     const couponForm = document.getElementById("cart-coupon-form");
-    couponForm.addEventListener("submit", (e) => {
-      e.preventDefault();
-      let code = document.getElementById("coupon-code").value.trim().toUpperCase();
-      let gd_coupons = JSON.parse(localStorage.getItem("gd_coupons") || "[]");
-      let matched = gd_coupons.find(c => c.code === code);
-      if (matched) {
-        window.GalaxyUtils.showToast(`Coupon ${code} applied! ${matched.discount}% discount subtracted from Subtotal.`);
-        this.applyDiscount(matched.discount / 100);
-      } else {
-        window.GalaxyUtils.showToast("Invalid promo coupon code.", "error");
-      }
-    });
+    if (couponForm) {
+      couponForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const codeInput = document.getElementById("coupon-code");
+        if (!codeInput) return;
+        const code = codeInput.value.trim().toUpperCase();
+        const subtotal = this.cart.reduce((sum, item) => sum + ((item.product.offerPrice || item.product.price) * item.quantity), 0);
+
+        const res = await window.GalaxyAPI.validateCoupon(code, subtotal);
+        if (res.valid) {
+          this.appliedPromo = res.coupon;
+          const discountDesc = res.coupon.discountType === 'percentage' ? `${res.coupon.discountValue}%` : `₹${res.coupon.discountValue}`;
+          window.GalaxyUtils.showToast(`Coupon ${res.coupon.code} applied! (${discountDesc} discount)`);
+          this.calculateCartTotals();
+        } else {
+          this.appliedPromo = null;
+          window.GalaxyUtils.showToast(res.error || "Invalid promo coupon code.", "error");
+          this.calculateCartTotals();
+        }
+      });
+    }
   }
 
   renderCartPageRows() {
@@ -1983,30 +2164,39 @@ class ECommerceApp {
     this.calculateCartTotals();
   }
 
-  calculateCartTotals(discountPercent = 0.0) {
+  calculateCartTotals() {
     let subtotal = this.cart.reduce((sum, item) => sum + ((item.product.offerPrice || item.product.price) * item.quantity), 0);
+
+    let discountAmt = 0;
+    if (this.appliedPromo) {
+      if (this.appliedPromo.discountType === 'percentage') {
+        discountAmt = Math.round((subtotal * this.appliedPromo.discountValue) / 100);
+      } else {
+        discountAmt = Number(this.appliedPromo.discountValue) || 0;
+      }
+    }
 
     const subEl = document.getElementById("cart-page-subtotal");
     const shippingEl = document.getElementById("cart-page-shipping");
     const grandEl = document.getElementById("cart-page-grandtotal");
 
+    let totalShipping = this.cart.reduce((sum, item) => sum + ((Number(item.product.shipping) || 0) * item.quantity), 0);
+
     if (subEl) subEl.textContent = window.GalaxyUtils.formatCurrency(subtotal);
     if (shippingEl) {
-      // For cart page, let's assume standard shipping logic (e.g. free over 100000, else 2000 per item)
-      let totalShipping = this.cart.reduce((sum, item) => sum + ((item.product.shipping || 0) * item.quantity), 0);
       shippingEl.textContent = totalShipping > 0 ? window.GalaxyUtils.formatCurrency(totalShipping) : "FREE";
       shippingEl.style.color = totalShipping > 0 ? "inherit" : "var(--color-success)";
     }
     if (grandEl) {
-      let totalShipping = this.cart.reduce((sum, item) => sum + ((item.product.shipping || 0) * item.quantity), 0);
-      let total = subtotal - (subtotal * (discountPercent / 100)) + totalShipping;
+      let total = Math.max(0, subtotal - discountAmt + totalShipping);
       grandEl.innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
     }
   }
 
   applyDiscount(percent) {
-    this.calculateCartTotals(percent);
+    this.calculateCartTotals();
   }
+
 
   // --- 7. Render CHECKOUT PAGE ---
   renderCheckoutPage() {
@@ -2015,32 +2205,92 @@ class ECommerceApp {
       return;
     }
 
-    let subtotal = this.cart.reduce((sum, item) => sum + ((item.product.offerPrice || item.product.price) * item.quantity), 0);
-    let totalShipping = this.cart.reduce((sum, item) => sum + ((item.product.shipping || 0) * item.quantity), 0);
+    // Audit stock for all cart items
+    let stockViolation = false;
+    let stockWarningMessages = [];
+
+    this.cart.forEach(item => {
+      const fresh = this.products.find(p => p.id === item.product.id);
+      const prod = fresh || item.product;
+      const availableStock = this.getAvailableStock(prod);
+      const isOut = this.isOutOfStock(prod);
+
+      if (isOut || availableStock <= 0) {
+        stockViolation = true;
+        stockWarningMessages.push(`"${prod.name}" is currently Out of Stock.`);
+      } else if (item.quantity > availableStock) {
+        stockViolation = true;
+        stockWarningMessages.push(`Only ${availableStock} unit(s) of "${prod.name}" available in stock, but you requested ${item.quantity}.`);
+      }
+    });
+
     let discountAmt = 0;
     let discountPercent = 0;
     let appliedPromoStr = "";
 
-    // We will inject a dynamic render function for the summary section
+    // Dynamic summary calculation
+    let getTotals = () => {
+      let subtotal = this.cart.reduce((sum, item) => {
+        const unitPrice = (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price);
+        return sum + (unitPrice * item.quantity);
+      }, 0);
+      let totalShipping = this.cart.reduce((sum, item) => sum + ((Number(item.product.shipping) || 0) * item.quantity), 0);
+      let total = Math.max(0, subtotal - discountAmt + totalShipping);
+      return { subtotal, totalShipping, total };
+    };
+
     let renderSummary = () => {
-      let total = subtotal - discountAmt + totalShipping;
+      const { subtotal, totalShipping, total } = getTotals();
 
-
-      document.getElementById("checkout-subtotal-val").textContent = window.GalaxyUtils.formatCurrency(subtotal);
+      const subEl = document.getElementById("checkout-subtotal-val");
+      if (subEl) subEl.textContent = window.GalaxyUtils.formatCurrency(subtotal);
 
       let shipEl = document.getElementById("checkout-shipping-val");
-      shipEl.textContent = totalShipping > 0 ? window.GalaxyUtils.formatCurrency(totalShipping) : "FREE";
-      shipEl.style.color = totalShipping > 0 ? "inherit" : "var(--color-success)";
+      if (shipEl) {
+        shipEl.textContent = totalShipping > 0 ? window.GalaxyUtils.formatCurrency(totalShipping) : "FREE";
+        shipEl.style.color = totalShipping > 0 ? "inherit" : "var(--color-success)";
+      }
 
       let discEl = document.getElementById("checkout-discount-row");
-      if (discountAmt > 0) {
-        discEl.style.display = "table-row";
-        document.getElementById("checkout-discount-val").textContent = "-" + window.GalaxyUtils.formatCurrency(discountAmt);
-      } else {
-        discEl.style.display = "none";
+      if (discEl) {
+        if (discountAmt > 0) {
+          discEl.style.display = "table-row";
+          document.getElementById("checkout-discount-val").textContent = "-" + window.GalaxyUtils.formatCurrency(discountAmt);
+        } else {
+          discEl.style.display = "none";
+        }
       }
-      document.getElementById("checkout-grandtotal-val").innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
+
+      const grandEl = document.getElementById("checkout-grandtotal-val");
+      if (grandEl) grandEl.innerHTML = `${window.GalaxyUtils.formatCurrency(total)}`;
+
+      const submitBtn = document.querySelector('#checkout-form button[type="submit"]');
+      const warningTextEl = document.getElementById("checkout-submit-warning-text");
+
+      if (submitBtn) {
+        if (stockViolation) {
+          submitBtn.disabled = true;
+          submitBtn.style.backgroundColor = "#d9534f";
+          submitBtn.style.borderColor = "#d9534f";
+          submitBtn.style.color = "#ffffff";
+          submitBtn.style.cursor = "not-allowed";
+          submitBtn.style.opacity = "0.7";
+          submitBtn.innerHTML = `<i data-lucide="alert-circle" style="width:16px;height:16px;margin-right:6px;vertical-align:middle;"></i> Stock Limit Exceeded (${window.GalaxyUtils.formatCurrency(total)})`;
+          if (warningTextEl) warningTextEl.style.display = "block";
+        } else {
+          submitBtn.disabled = false;
+          submitBtn.style.backgroundColor = "";
+          submitBtn.style.borderColor = "";
+          submitBtn.style.color = "";
+          submitBtn.style.cursor = "";
+          submitBtn.style.opacity = "";
+          submitBtn.textContent = `Confirm Order (${window.GalaxyUtils.formatCurrency(total)})`;
+          if (warningTextEl) warningTextEl.style.display = "none";
+        }
+      }
     };
+
+    const initialSubtotal = getTotals().subtotal;
 
     this.appRoot.innerHTML = `
       <section class="py-section container fade-in">
@@ -2049,6 +2299,20 @@ class ECommerceApp {
         </div>
         <h1 class="section-title" style="margin-bottom: var(--spacing-xl); text-align:left;">Secure Checkout</h1>
         
+        ${stockViolation ? `
+          <div class="checkout-stock-alert-banner" style="background:#fff3cd; border:1px solid #ffeeba; color:#856404; padding:1.2rem; border-radius:8px; margin-bottom:1.5rem; display:flex; flex-direction:column; gap:8px;">
+            <div style="font-weight:700; font-size:1.05rem; display:flex; align-items:center; gap:6px;">
+              <i data-lucide="alert-triangle" style="stroke:#856404;"></i> Cannot Place Order: Stock Limit Exceeded
+            </div>
+            <ul style="margin:0; padding-left:1.2rem; font-size:0.9rem;">
+              ${stockWarningMessages.map(msg => `<li>${msg}</li>`).join('')}
+            </ul>
+            <div style="margin-top:6px;">
+              <a href="/cart" class="btn btn-outline-black btn-sm"><i data-lucide="arrow-left" style="width:14px;height:14px;margin-right:4px;"></i> Return to Shopping Bag to Adjust Quantity</a>
+            </div>
+          </div>
+        ` : ""}
+
         <div class="checkout-layout">
           <!-- Customer Details & Billing -->
           <form id="checkout-form" class="contact-form-wrapper" style="box-shadow:none;">
@@ -2077,7 +2341,7 @@ class ECommerceApp {
               </div>
               <div class="form-group">
                 <label for="ch-phone">Phone Number</label>
-                <input type="tel" id="ch-phone" class="form-control" placeholder="8608738393" required maxlength="10" minlength="10" pattern="[0-9]{10}" oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);">
+                <input type="tel" id="ch-phone" class="form-control" placeholder="8608738393" required>
               </div>
               <div class="form-group">
                 <label for="ch-email">Email Address</label>
@@ -2103,7 +2367,12 @@ class ECommerceApp {
               </label>
             </div>
 
-            <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top: var(--spacing-lg);">Confirm Order (₹${subtotal.toLocaleString()})</button>
+            <button type="submit" class="btn btn-gold btn-block btn-lg" style="margin-top: var(--spacing-lg);" ${stockViolation ? "disabled style='background-color:#d9534f; border-color:#d9534f; color:#fff; opacity:0.7; cursor:not-allowed;'" : ""}>
+              ${stockViolation ? "⚠️ Stock Limit Exceeded" : "Confirm Order"}
+            </button>
+            <p id="checkout-submit-warning-text" style="display:${stockViolation ? 'block' : 'none'}; color:#d9534f; font-weight:600; font-size:0.85rem; margin-top:8px; text-align:center;">
+              ⚠️ Cannot place order: Requested item quantity exceeds available showroom stock. Please adjust quantity in your bag.
+            </p>
           </form>
 
           <!-- Order Summary Card -->
@@ -2111,12 +2380,24 @@ class ECommerceApp {
             <h3 style="border-bottom: 1px solid var(--color-border); padding-bottom:5px;">Order Summary</h3>
             
             <div class="checkout-items-list">
-              ${this.cart.map(item => `
-                <div class="checkout-item-row">
-                  <span class="checkout-item-name">${item.product.name} (x${item.quantity})</span>
-                  <span class="checkout-item-price">${window.GalaxyUtils.formatCurrency((item.product.offerPrice || item.product.price) * item.quantity)}</span>
-                </div>
-              `).join("")}
+              ${this.cart.map(item => {
+                const fresh = this.products.find(p => p.id === item.product.id);
+                const prod = fresh || item.product;
+                const availableStock = this.getAvailableStock(prod);
+                const isOut = this.isOutOfStock(prod);
+                const itemStockViolation = isOut || item.quantity > availableStock;
+                const unitPrice = (prod.offerPrice && Number(prod.offerPrice) > 0) ? Number(prod.offerPrice) : Number(prod.price);
+
+                return `
+                  <div class="checkout-item-row" style="${itemStockViolation ? 'background:#fff5f5; border-left:3px solid #d9534f; padding:6px 8px; border-radius:4px; margin-bottom:6px;' : ''}">
+                    <span class="checkout-item-name">
+                      ${prod.name} (x${item.quantity})
+                      ${itemStockViolation ? `<br><small style="color:#d9534f; font-weight:600;">⚠️ ${isOut ? 'Out of Stock' : `Exceeds stock (Max: ${availableStock})`}</small>` : ''}
+                    </span>
+                    <span class="checkout-item-price">${window.GalaxyUtils.formatCurrency(unitPrice * item.quantity)}</span>
+                  </div>
+                `;
+              }).join("")}
             </div>
 
             <form id="checkout-coupon-form" style="display:flex; gap:0.5rem; margin-bottom: 1.5rem; margin-top: 1rem;">
@@ -2127,10 +2408,10 @@ class ECommerceApp {
             <table class="summary-table" style="margin-bottom: 0;">
               <tbody>
                 <tr>
-                  <td class="summary-label">Items Total</td>
-                  <td class="summary-value" id="checkout-subtotal-val"></td>
+                  <td class="summary-label">Subtotal</td>
+                  <td class="summary-value" id="checkout-subtotal-val">${window.GalaxyUtils.formatCurrency(initialSubtotal)}</td>
                 </tr>
-                <tr id="checkout-discount-row" style="display:none; color: var(--color-gold);">
+                <tr id="checkout-discount-row" style="display:none; color:var(--color-success);">
                   <td class="summary-label">Promo Discount</td>
                   <td class="summary-value" id="checkout-discount-val"></td>
                 </tr>
@@ -2149,27 +2430,42 @@ class ECommerceApp {
       </section>
     `;
 
+
     lucide.createIcons();
     renderSummary();
 
     const chCouponForm = document.getElementById("checkout-coupon-form");
     if (chCouponForm) {
-      chCouponForm.addEventListener("submit", (e) => {
+      chCouponForm.addEventListener("submit", async (e) => {
         e.preventDefault();
-        let code = document.getElementById("ch-coupon-code").value.trim().toUpperCase();
-        let gd_coupons = JSON.parse(localStorage.getItem("gd_coupons") || "[]");
-        let matched = gd_coupons.find(c => c.code === code);
-        if (matched) {
-          window.GalaxyUtils.showToast(`Coupon ${code} applied! ${matched.discount}% discount.`);
-          discountPercent = matched.discount / 100;
-          discountAmt = subtotal * discountPercent;
-          appliedPromoStr = code;
+        const codeInput = document.getElementById("ch-coupon-code");
+        if (!codeInput) return;
+        const code = codeInput.value.trim().toUpperCase();
+        const sub = getTotals().subtotal;
+
+        const res = await window.GalaxyAPI.validateCoupon(code, sub);
+        if (res.valid) {
+          const c = res.coupon;
+          this.appliedPromo = c;
+          if (c.discountType === 'percentage') {
+            discountAmt = Math.round((sub * c.discountValue) / 100);
+          } else {
+            discountAmt = Number(c.discountValue) || 0;
+          }
+          appliedPromoStr = c.code;
+          const discountDesc = c.discountType === 'percentage' ? `${c.discountValue}%` : `₹${c.discountValue}`;
+          window.GalaxyUtils.showToast(`Coupon ${c.code} applied! (${discountDesc} discount)`);
           renderSummary();
         } else {
-          window.GalaxyUtils.showToast("Invalid promo coupon code.", "error");
+          this.appliedPromo = null;
+          discountAmt = 0;
+          appliedPromoStr = "";
+          window.GalaxyUtils.showToast(res.error || "Invalid promo coupon code.", "error");
+          renderSummary();
         }
       });
     }
+
 
     // Toggle Payment selection visuals
     const rCod = document.getElementById("method-cod");
@@ -2194,8 +2490,48 @@ class ECommerceApp {
       chForm.addEventListener("submit", async (e) => {
         e.preventDefault();
 
+        // 1. Reload latest products from localStorage
+        try {
+          const freshProds = JSON.parse(localStorage.getItem("gd_products"));
+          if (Array.isArray(freshProds) && freshProds.length > 0) {
+            this.products = freshProds;
+          }
+        } catch (err) {}
+
+        // 2. Sync cart items with fresh product stock counts
+        this.syncCartWithProducts();
+
+        if (this.cart.length === 0) {
+          window.GalaxyUtils.showToast("⚠️ Your shopping bag is empty.", "error");
+          window.GalaxyRouter.navigate("/cart");
+          return;
+        }
+
+        // 3. Strict Pre-Submission & Pre-Payment Stock Audit Loop
+        for (let item of this.cart) {
+          const fresh = this.products.find(p => p.id === item.product.id);
+          const prod = fresh || item.product;
+          const availableStock = this.getAvailableStock(prod);
+          const isOut = this.isOutOfStock(prod);
+
+          if (isOut || availableStock <= 0) {
+            window.GalaxyUtils.showToast(`⚠️ Cannot place order: "${prod.name}" is currently Out of Stock! Your shopping bag has been updated.`, "error");
+            this.syncCartWithProducts();
+            this.renderCheckoutPage();
+            return;
+          }
+
+          if (item.quantity > availableStock) {
+            window.GalaxyUtils.showToast(`⚠️ Cannot proceed to payment: Only ${availableStock} unit(s) of "${prod.name}" available in stock, but you requested ${item.quantity}. Your bag quantity has been updated.`, "error");
+            this.syncCartWithProducts();
+            this.renderCheckoutPage();
+            return;
+          }
+        }
+
         const phoneVal = document.getElementById("ch-phone").value.trim();
         const digitsOnly = phoneVal.replace(/[^0-9]/g, "");
+
         if (phoneVal.startsWith("+")) {
           if (digitsOnly.length < 7) {
             window.GalaxyUtils.showToast("Foreign phone number must have at least 7 digits.", "error");
@@ -2208,25 +2544,28 @@ class ECommerceApp {
           }
         }
 
-        let payMethod = chForm.querySelector('input[name="pay-method"]:checked').value;
+        const checkedPayMethod = chForm.querySelector('input[name="pay-method"]:checked');
+        const payMethod = checkedPayMethod ? checkedPayMethod.value : "COD";
+        const currentTotals = getTotals();
+
         let orderDetails = {
           orderId: "GD-" + Math.floor(100000 + Math.random() * 900000),
-          name: document.getElementById("ch-fname").value + " " + document.getElementById("ch-lname").value,
+          name: document.getElementById("ch-fname").value.trim() + " " + document.getElementById("ch-lname").value.trim(),
           phone: phoneVal,
-          email: document.getElementById("ch-email").value,
-          address: document.getElementById("ch-address").value + ", " + document.getElementById("ch-city").value + " - " + document.getElementById("ch-pincode").value,
+          email: document.getElementById("ch-email").value.trim(),
+          address: document.getElementById("ch-address").value.trim() + ", " + document.getElementById("ch-city").value.trim() + " - " + document.getElementById("ch-pincode").value.trim(),
           items: this.cart.map(item => ({
             id: item.product.id,
             name: item.product.name,
             quantity: item.quantity,
-            price: item.product.offerPrice || item.product.price,
-            shipping: item.product.shipping || 0
+            price: (item.product.offerPrice && Number(item.product.offerPrice) > 0) ? Number(item.product.offerPrice) : Number(item.product.price),
+            shipping: Number(item.product.shipping) || 0
           })),
-          subtotal: subtotal,
-          totalShipping: totalShipping,
+          subtotal: currentTotals.subtotal,
+          totalShipping: currentTotals.totalShipping,
           promoDiscount: discountAmt,
           appliedPromo: appliedPromoStr,
-          total: (subtotal - discountAmt + totalShipping),
+          total: currentTotals.total,
           payment: payMethod,
           paymentStatus: payMethod === "COD" ? "Pending" : "Paid",
           orderStatus: "New",
@@ -2265,12 +2604,26 @@ class ECommerceApp {
               })
             });
 
-            if (!createOrderResponse.ok) {
-              const errorData = await createOrderResponse.json();
-              throw new Error(errorData.error || 'Failed to create payment order.');
+            let errorMsg = 'Failed to start online payment order.';
+            let razorpayOrder = null;
+
+            try {
+              const resText = await createOrderResponse.text();
+              const parsed = JSON.parse(resText);
+              if (parsed && parsed.error) {
+                errorMsg = parsed.error;
+              } else {
+                razorpayOrder = parsed;
+              }
+            } catch (parseErr) {
+              if (!createOrderResponse.ok) {
+                errorMsg = 'Online payments are not configured on Vercel yet. Please add RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in Vercel Project Settings -> Environment Variables, or use Cash on Delivery.';
+              }
             }
 
-            const razorpayOrder = await createOrderResponse.json();
+            if (!createOrderResponse.ok || !razorpayOrder) {
+              throw new Error(errorMsg);
+            }
 
             // Step 2: Open Razorpay Checkout with the server-created order
             const rzpOptions = {
@@ -2295,7 +2648,13 @@ class ECommerceApp {
                     })
                   });
 
-                  const verifyResult = await verifyResponse.json();
+                  let verifyResult = {};
+                  try {
+                    const vText = await verifyResponse.text();
+                    verifyResult = JSON.parse(vText);
+                  } catch (e) {
+                    verifyResult = {};
+                  }
 
                   if (verifyResponse.ok && verifyResult.verified) {
                     // Step 4: Payment verified — finalize the order
@@ -2334,11 +2693,31 @@ class ECommerceApp {
                 "color": "#C9A227"
               },
               "prefill": {
-                "name": orderDetails.name,
-                "email": orderDetails.email,
-                "contact": orderDetails.phone
+                "name": orderDetails.name || "",
+                "email": orderDetails.email || "",
+                "contact": (orderDetails.phone || "").replace(/[^0-9]/g, "").slice(-10)
+              },
+              "config": {
+                "display": {
+                  "blocks": {
+                    "upi": {
+                      "name": "Pay via UPI QR",
+                      "instruments": [
+                        {
+                          "method": "upi",
+                          "flows": ["qr", "intent"]
+                        }
+                      ]
+                    }
+                  },
+                  "sequence": ["block.upi"],
+                  "preferences": {
+                    "show_default_blocks": true
+                  }
+                }
               }
             };
+
 
             const rzp = new Razorpay(rzpOptions);
             rzp.open();
@@ -2368,7 +2747,33 @@ class ECommerceApp {
       orders.push(orderDetails);
       localStorage.setItem("gd_orders", JSON.stringify(orders));
 
-      // Sync to real backend
+      // Deduct purchased item quantities from product stock
+      if (Array.isArray(orderDetails.items)) {
+        let prodsChanged = false;
+        orderDetails.items.forEach(item => {
+          let prod = this.products.find(p => p.id === item.id);
+          if (prod) {
+            let currentStock = this.getAvailableStock(prod);
+            let newStock = Math.max(0, currentStock - (Number(item.quantity) || 1));
+            prod.stockCount = newStock;
+            if (prod.specs && typeof prod.specs === 'object') {
+              prod.specs.stockCount = newStock;
+            }
+            if (newStock === 0) {
+              prod.inStock = false;
+            }
+            prodsChanged = true;
+            if (window.GalaxyAPI) {
+              window.GalaxyAPI.syncEntity('products/' + prod.id, 'PUT', prod);
+            }
+          }
+        });
+        if (prodsChanged) {
+          localStorage.setItem("gd_products", JSON.stringify(this.products));
+        }
+      }
+
+      // Sync order to real backend
       if (window.GalaxyAPI) {
         window.GalaxyAPI.syncEntity('orders', 'POST', orderDetails);
       }
@@ -2383,6 +2788,7 @@ class ECommerceApp {
 
     window.GalaxyRouter.navigate("/order-success");
   }
+
 
   // --- 8. Render ORDER SUCCESS PAGE ---
   renderOrderSuccess() {
