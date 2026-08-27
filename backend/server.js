@@ -724,7 +724,10 @@ app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
 // 10. SPA Wildcard Catch-All (Fallback to index.html)
 // ----------------------------------------------------
 app.use((req, res, next) => {
-  if (req.method === 'GET' && !req.path.startsWith('/api')) {
+  const isApi = (req.url && req.url.startsWith('/api')) || 
+                (req.originalUrl && req.originalUrl.startsWith('/api')) ||
+                (req.path && req.path.startsWith('/api'));
+  if (req.method === 'GET' && !isApi) {
     return res.sendFile(path.join(__dirname, '..', 'index.html'));
   }
   next();
