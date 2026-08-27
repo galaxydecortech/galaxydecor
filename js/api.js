@@ -5,6 +5,20 @@
 
 const API_BASE = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) ? 'http://localhost:5000/api' : '/api';
 
+// ----------------------------------------------------
+// Cache Version Guard
+// Bump DATA_VERSION whenever products/categories change
+// to force-clear old localStorage cache on all devices.
+// ----------------------------------------------------
+const DATA_VERSION = "v3"; // <-- bump this when data changes
+const storedVersion = localStorage.getItem("gd_data_version");
+if (storedVersion !== DATA_VERSION) {
+  // Clear all old product/category/review cache
+  ["gd_products","gd_categories","gd_reviews","gd_store","gd_solutions","gd_orders","gd_enquiries","gd_coupons"].forEach(k => localStorage.removeItem(k));
+  localStorage.setItem("gd_data_version", DATA_VERSION);
+  console.log("[Cache] Old data cleared. Fresh data will be loaded from backend.");
+}
+
 window.GalaxyAPI = {
   
   // ----------------------------------------------------
