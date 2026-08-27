@@ -274,7 +274,7 @@ class ECommerceApp {
   saveCart() {
     localStorage.setItem("gd_cart", JSON.stringify(this.cart));
     this.updateBadges();
-    this.renderCartDrawer();
+    this.renderCartDrawerItems();
   }
 
   saveWishlist() {
@@ -342,6 +342,9 @@ class ECommerceApp {
 
   buyNow(productId, quantity = 1) {
     this.addToCart(productId, quantity, false);
+    this.closeCartDrawer();
+    this.closeQuickView();
+    this.closeMobileSidebar();
     if (window.GalaxyRouter && typeof window.GalaxyRouter.navigate === "function") {
       window.GalaxyRouter.navigate("/checkout");
     } else {
