@@ -1519,6 +1519,8 @@ class ECommerceApp {
     }
 
 
+    const maxCatalogPrice = Math.max(150000, ...this.products.map(p => Number(p.offerPrice || p.price) || 0));
+
     this.appRoot.innerHTML = `
       <section class="py-section catalog-py-section container">
         <div class="catalog-layout">
@@ -1557,9 +1559,9 @@ class ECommerceApp {
               <div class="filter-group">
                 <h4 class="filter-group-title">Price Limit</h4>
                 <div class="price-slider-wrap">
-                  <input type="range" id="filter-price-range" min="0" max="150000" step="1000" value="150000" class="range-slider">
+                  <input type="range" id="filter-price-range" min="0" max="${maxCatalogPrice}" step="1000" value="${maxCatalogPrice}" class="range-slider">
                   <div class="price-val-display">
-                    Max: <strong id="filter-price-val">₹1,50,000</strong>
+                    Max: <strong id="filter-price-val">${window.GalaxyUtils.formatCurrency(maxCatalogPrice)}</strong>
                   </div>
                 </div>
               </div>
@@ -1679,10 +1681,12 @@ class ECommerceApp {
       initCats = [initialCategory];
     }
 
+    const maxCatalogPrice = Math.max(150000, ...this.products.map(p => Number(p.offerPrice || p.price) || 0));
+
     // Local filter state
     const filterState = {
       categories: initCats,
-      maxPrice: 150000,
+      maxPrice: maxCatalogPrice,
       stockOnly: false,
       sortBy: "latest",
       search: searchQuery
@@ -1781,13 +1785,16 @@ class ECommerceApp {
     if (clearBtn) {
       clearBtn.addEventListener("click", () => {
         categoryCheckboxes.forEach(c => c.checked = false);
-        if (priceSlider) priceSlider.value = 150000;
-        if (priceLabel) priceLabel.textContent = "Max: ₹1,50,000";
+        if (priceSlider) {
+          priceSlider.max = maxCatalogPrice;
+          priceSlider.value = maxCatalogPrice;
+        }
+        if (priceLabel) priceLabel.textContent = `Max: ${window.GalaxyUtils ? window.GalaxyUtils.formatCurrency(maxCatalogPrice) : '₹' + maxCatalogPrice.toLocaleString('en-IN')}`;
         if (stockCheckbox) stockCheckbox.checked = false;
         if (sortSelect) sortSelect.value = "latest";
 
         filterState.categories = [];
-        filterState.maxPrice = 150000;
+        filterState.maxPrice = maxCatalogPrice;
         filterState.stockOnly = false;
         filterState.sortBy = "latest";
         filterState.search = "";
