@@ -31,6 +31,8 @@ if (razorpayKeyId && razorpayKeySecret && !razorpayKeyId.includes('YOUR_KEY')) {
   console.warn('Online payments will not work until you add valid keys.');
 }
 
+app.get('/api/ping', (req, res) => res.status(200).send('pong from vercel express! url:' + req.url + ' path:' + req.path));
+
 // Middleware
 app.use(cors());
 app.use(express.json());
