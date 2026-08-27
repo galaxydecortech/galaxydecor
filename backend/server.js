@@ -45,9 +45,6 @@ if (!fs.existsSync(catalogScriptPath)) {
   }
 }
 
-// Serve static frontend files from workspace root
-app.use(express.static(path.join(__dirname, '..')));
-
 // ----------------------------------------------------
 // Vercel Serverless Path Compatibility
 // When deployed on Vercel, the serverless runtime may strip the /api
@@ -723,7 +720,7 @@ app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
 });
 
 // ----------------------------------------------------
-// 10. SPA Wildcard Catch-All (Fallback to index.html)
+// 10. SPA Wildcard Catch-All & Static Files (Fallback)
 // ----------------------------------------------------
 app.use((req, res, next) => {
   const isApi = (req.url && req.url.startsWith('/api')) || 
@@ -732,6 +729,13 @@ app.use((req, res, next) => {
   if (isApi) {
     return res.status(404).json({ error: `API route ${req.url} not found` });
   }
+  next();
+});
+
+// Serve static frontend files for non-API routes
+app.use(express.static(path.join(__dirname, '..')));
+
+app.use((req, res, next) => {
   if (req.method === 'GET') {
     return res.sendFile(path.join(__dirname, '..', 'index.html'));
   }
