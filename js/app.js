@@ -340,6 +340,15 @@ class ECommerceApp {
     return true;
   }
 
+  buyNow(productId, quantity = 1) {
+    this.addToCart(productId, quantity, false);
+    if (window.GalaxyRouter && typeof window.GalaxyRouter.navigate === "function") {
+      window.GalaxyRouter.navigate("/checkout");
+    } else {
+      window.location.href = "/checkout";
+    }
+  }
+
   removeFromCart(productId) {
     this.cart = this.cart.filter(item => {
       if (!item || !item.product) return false;
@@ -772,11 +781,8 @@ class ECommerceApp {
     });
 
     content.querySelector(".btn-buy-qv").addEventListener("click", () => {
-      const added = this.addToCart(product.id, 1, false);
-      if (added) {
-        modal.classList.add("hidden");
-        window.GalaxyRouter.navigate("/checkout");
-      }
+      modal.classList.add("hidden");
+      this.buyNow(product.id, 1);
     });
 
     content.querySelector(".btn-view-details-qv").addEventListener("click", () => {
@@ -906,10 +912,7 @@ class ECommerceApp {
         e.preventDefault();
         e.stopPropagation();
         let id = btn.getAttribute("data-id");
-        const added = this.addToCart(id, 1, false);
-        if (added) {
-          window.GalaxyRouter.navigate("/checkout");
-        }
+        this.buyNow(id, 1);
       });
     });
   }
@@ -2014,10 +2017,7 @@ class ECommerceApp {
 
     // Buy Now
     document.getElementById("btn-detail-buy").addEventListener("click", () => {
-      const added = this.addToCart(product.id, localQty, false);
-      if (added) {
-        window.GalaxyRouter.navigate("/checkout");
-      }
+      this.buyNow(product.id, localQty);
     });
 
     // Wishlist toggle
