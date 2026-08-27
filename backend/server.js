@@ -57,6 +57,8 @@ app.use(express.static(path.join(__dirname, '..')));
 app.use((req, res, next) => {
   if (req.url && !req.url.startsWith('/api') && req.url !== '/') {
     req.url = '/api' + req.url;
+    req.originalUrl = req.url;
+    req._parsedUrl = undefined;
   }
   next();
 });
@@ -727,7 +729,10 @@ app.use((req, res, next) => {
   const isApi = (req.url && req.url.startsWith('/api')) || 
                 (req.originalUrl && req.originalUrl.startsWith('/api')) ||
                 (req.path && req.path.startsWith('/api'));
-  if (req.method === 'GET' && !isApi) {
+  if (isApi) {
+    return res.status(404).json({ error: `API route ${req.url} not found` });
+  }
+  if (req.method === 'GET') {
     return res.sendFile(path.join(__dirname, '..', 'index.html'));
   }
   next();
