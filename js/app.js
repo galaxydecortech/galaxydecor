@@ -2213,6 +2213,10 @@ class ECommerceApp {
       return;
     }
 
+    const isCodEnabled = Boolean(
+      this.store && (this.store.enableCOD === true || this.store.enableCOD === 'true')
+    );
+
     // Audit stock for all cart items
     let stockViolation = false;
     let stockWarningMessages = [];
@@ -2359,15 +2363,17 @@ class ECommerceApp {
 
             <div class="checkout-section-title" style="margin-top:var(--spacing-xl);">2. Payment Method</div>
             <div class="payment-methods">
-              <label class="payment-method-option selected" id="method-cod">
-                <input type="radio" name="pay-method" value="COD" checked>
-                <div class="payment-method-details">
-                  <h4>Cash on Delivery (COD)</h4>
-                  <p>Pay cash when we safely deliver and set up furniture at your location.</p>
-                </div>
-              </label>
-              <label class="payment-method-option" id="method-online">
-                <input type="radio" name="pay-method" value="ONLINE">
+              ${isCodEnabled ? `
+                <label class="payment-method-option selected" id="method-cod">
+                  <input type="radio" name="pay-method" value="COD" checked>
+                  <div class="payment-method-details">
+                    <h4>Cash on Delivery (COD)</h4>
+                    <p>Pay cash when we safely deliver and set up furniture at your location.</p>
+                  </div>
+                </label>
+              ` : ''}
+              <label class="payment-method-option ${!isCodEnabled ? 'selected' : ''}" id="method-online">
+                <input type="radio" name="pay-method" value="ONLINE" ${!isCodEnabled ? 'checked' : ''}>
                 <div class="payment-method-details">
                   <h4>Pay Online (UPI / Card / Net Banking)</h4>
                   <p>Pay securely via Razorpay — UPI, debit/credit cards, wallets, and net banking.</p>
@@ -2478,18 +2484,26 @@ class ECommerceApp {
     // Toggle Payment selection visuals
     const rCod = document.getElementById("method-cod");
     const rOnline = document.getElementById("method-online");
-    const optCod = rCod.querySelector('input[value="COD"]');
-    const optOnline = rOnline.querySelector('input[value="ONLINE"]');
 
-    optCod.addEventListener("change", () => {
-      rCod.classList.add("selected");
-      rOnline.classList.remove("selected");
-    });
+    if (rCod) {
+      const optCod = rCod.querySelector('input[value="COD"]');
+      if (optCod) {
+        optCod.addEventListener("change", () => {
+          rCod.classList.add("selected");
+          if (rOnline) rOnline.classList.remove("selected");
+        });
+      }
+    }
 
-    optOnline.addEventListener("change", () => {
-      rOnline.classList.add("selected");
-      rCod.classList.remove("selected");
-    });
+    if (rOnline) {
+      const optOnline = rOnline.querySelector('input[value="ONLINE"]');
+      if (optOnline) {
+        optOnline.addEventListener("change", () => {
+          rOnline.classList.add("selected");
+          if (rCod) rCod.classList.remove("selected");
+        });
+      }
+    }
 
     // Handle Order Confirmation Form Submit
     const chForm = document.getElementById("checkout-form");
@@ -2553,7 +2567,7 @@ class ECommerceApp {
         }
 
         const checkedPayMethod = chForm.querySelector('input[name="pay-method"]:checked');
-        const payMethod = checkedPayMethod ? checkedPayMethod.value : "COD";
+        const payMethod = checkedPayMethod ? checkedPayMethod.value : (isCodEnabled ? "COD" : "ONLINE");
         const currentTotals = getTotals();
 
         let orderDetails = {

@@ -1630,6 +1630,17 @@
                   <label for="set-address">Showroom Address</label>
                   <textarea id="set-address" class="form-control" rows="4" required></textarea>
                 </div>
+                
+                <div class="form-group" style="background: #fdf8ec; padding: 14px 16px; border-radius: 8px; border: 1px solid #f5e0b8; margin-top: 1.2rem; margin-bottom: 1.5rem;">
+                  <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; margin: 0; font-weight: 600; color: #b8860b;">
+                    <span>Enable Cash on Delivery (COD)</span>
+                    <input type="checkbox" id="set-enable-cod" style="width: 20px; height: 20px; accent-color: #b8860b; cursor: pointer;">
+                  </label>
+                  <span style="display: block; font-size: 0.8rem; color: #777; margin-top: 6px; line-height: 1.4;">
+                    Check this box to enable Cash on Delivery on the checkout page. Uncheck to restrict checkout to Online Payments (Razorpay) only.
+                  </span>
+                </div>
+
                 <button type="submit" class="btn btn-gold btn-sm">Save Config Profile</button>
               </form>
             </div>
@@ -3414,6 +3425,7 @@
       document.getElementById("set-email").value = store.email || "";
       document.getElementById("set-hours").value = store.hours || "";
       document.getElementById("set-address").value = store.address || "";
+      document.getElementById("set-enable-cod").checked = Boolean(store && (store.enableCOD === true || store.enableCOD === 'true'));
 
       // 2. Promo Coupons list
       const couponsTbody = document.getElementById("coupons-table-tbody");
@@ -3449,6 +3461,7 @@
       store.email = document.getElementById("set-email").value.trim();
       store.hours = document.getElementById("set-hours").value.trim();
       store.address = document.getElementById("set-address").value.trim();
+      store.enableCOD = document.getElementById("set-enable-cod").checked;
 
       saveStoreConfig();
 

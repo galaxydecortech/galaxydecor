@@ -10,7 +10,8 @@ window.GALAXY_DECOR_DB = {
     email: "galaxydecorind@gmail.com",
     address: "4/642, Post Office Building, Sakthi Nagar, Opposite Viswanathan Hospital, Vijayamangalam, Perundurai, Erode - 638056.",
     tagline: "Transform Your Space with Premium Imported Furniture",
-    about: "GALAXY DECOR specializes in premium imported furniture and complete interior solutions for residential and commercial spaces. We import high-quality furniture from China, Indonesia, and other leading Asian countries, offering elegant, durable, and modern collections for homes, offices, restaurants, hotels, cafés, showrooms, and commercial interiors."
+    about: "GALAXY DECOR specializes in premium imported furniture and complete interior solutions for residential and commercial spaces. We import high-quality furniture from China, Indonesia, and other leading Asian countries, offering elegant, durable, and modern collections for homes, offices, restaurants, hotels, cafés, showrooms, and commercial interiors.",
+    enableCOD: false
   },
 
   // 2. Featured Categories
