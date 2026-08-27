@@ -1,6 +1,6 @@
 /* ==========================================================================
    GALAXY DECOR - AUTOMATICALLY GENERATED PRODUCT CATALOG
-   Sync Date: 2026-08-27T09:34:27.358Z
+   Sync Date: 2026-08-27T11:19:41.579Z
    ========================================================================== */
 
 window.GALAXY_PRODUCTS = [
@@ -411,6 +411,31 @@ window.GALAXY_PRODUCTS = [
       "stockCount": 5
     },
     "createdAt": "2026-08-26T08:20:13.087527+00:00",
+    "shipping": 0,
+    "stockCount": 5
+  },
+  {
+    "id": "gd-1787826426631",
+    "name": "sariga",
+    "category": "showpieces",
+    "shortDesc": "fdsa",
+    "desc": "fdsa",
+    "price": 1,
+    "offerPrice": 0,
+    "image": "default_showpieces_placeholder.jpg",
+    "gallery": [
+      "default_showpieces_placeholder.jpg"
+    ],
+    "isNew": true,
+    "inStock": true,
+    "specs": {
+      "Finish": "fghjk",
+      "Features": "sdfghj",
+      "Material": "ertyu",
+      "Dimensions": "120",
+      "stockCount": 5
+    },
+    "createdAt": "2026-08-27T10:27:11.164029+00:00",
     "shipping": 0,
     "stockCount": 5
   }
