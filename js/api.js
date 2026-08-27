@@ -43,12 +43,10 @@ window.GalaxyAPI = {
       const store = await storeRes.json();
       const solutions = await solutionsRes.json();
 
-      // Update local storage cache
-      if (Array.isArray(products)) localStorage.setItem("gd_products", JSON.stringify(products));
-      if (Array.isArray(categories)) localStorage.setItem("gd_categories", JSON.stringify(categories));
-      if (Array.isArray(reviews)) localStorage.setItem("gd_reviews", JSON.stringify(reviews));
-      if (store && typeof store === 'object' && !store.error) localStorage.setItem("gd_store", JSON.stringify(store));
-      if (Array.isArray(solutions)) localStorage.setItem("gd_solutions", JSON.stringify(solutions));
+      // NOTE: Products, categories & reviews are intentionally NOT cached in localStorage.
+      // This ensures that when the client adds or deletes products via the admin panel,
+      // all users immediately see the updated data on their next page load — no manual
+      // cache busting or version bumps needed.
 
       // Synchronize in-memory app state and re-render current view with live DB data
       if (window.GalaxyAppInstance) {
