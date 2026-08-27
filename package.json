@@ -2,7 +2,7 @@
   "name": "galaxy-decor",
   "version": "1.0.0",
   "description": "Galaxy Decor - Luxury Furniture & Interior Solutions E-Commerce",
-  "main": "api/index.js",
+  "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js"
