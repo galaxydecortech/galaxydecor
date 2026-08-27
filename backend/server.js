@@ -49,6 +49,19 @@ if (!fs.existsSync(catalogScriptPath)) {
 app.use(express.static(path.join(__dirname, '..')));
 
 // ----------------------------------------------------
+// Vercel Serverless Path Compatibility
+// When deployed on Vercel, the serverless runtime may strip the /api
+// prefix from the URL before passing the request to this Express app.
+// This middleware re-adds the /api prefix so all defined routes match.
+// ----------------------------------------------------
+app.use((req, res, next) => {
+  if (req.url && !req.url.startsWith('/api') && req.url !== '/') {
+    req.url = '/api' + req.url;
+  }
+  next();
+});
+
+// ----------------------------------------------------
 // Admin Authentication & Authorization Middleware
 // ----------------------------------------------------
 const ADMIN_USER = process.env.ADMIN_USERNAME ? String(process.env.ADMIN_USERNAME).trim() : null;
