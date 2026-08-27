@@ -199,7 +199,8 @@ class ECommerceApp {
 
           updatedCart.push(item);
         } else {
-          updatedCart.push(item);
+          // Product no longer exists in current catalog/database -> Auto-remove obsolete item from cart!
+          changed = true;
         }
       }
     });
@@ -208,6 +209,7 @@ class ECommerceApp {
     if (changed) {
       localStorage.setItem("gd_cart", JSON.stringify(this.cart));
       this.updateBadges();
+      this.renderCartDrawer();
     }
   }
 
@@ -272,6 +274,7 @@ class ECommerceApp {
   saveCart() {
     localStorage.setItem("gd_cart", JSON.stringify(this.cart));
     this.updateBadges();
+    this.renderCartDrawer();
   }
 
   saveWishlist() {
@@ -334,7 +337,11 @@ class ECommerceApp {
   }
 
   removeFromCart(productId) {
-    this.cart = this.cart.filter(item => item.product.id !== productId);
+    this.cart = this.cart.filter(item => {
+      if (!item || !item.product) return false;
+      const pid = item.product.id || item.product;
+      return pid !== productId;
+    });
     this.saveCart();
     window.GalaxyUtils.showToast("Item removed from bag.", "info");
   }
