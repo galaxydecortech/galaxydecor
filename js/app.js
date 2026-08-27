@@ -88,10 +88,11 @@ class ECommerceApp {
     this.cart = JSON.parse(localStorage.getItem("gd_cart")) || [];
     this.wishlist = JSON.parse(localStorage.getItem("gd_wishlist")) || [];
 
-    // Check if synced catalog is loaded, otherwise use fallback data from data.js
+    // Check if synced catalog is loaded, otherwise use fallback data from products_catalog.js
+    let catalogData = window.GALAXY_PRODUCTS || window.GALAXY_DECOR_CATALOG || [];
     let parsedProducts = null;
     try { parsedProducts = JSON.parse(localStorage.getItem("gd_products")); } catch (e) { }
-    this.products = Array.isArray(parsedProducts) ? parsedProducts : window.GALAXY_DECOR_DB.products;
+    this.products = (Array.isArray(parsedProducts) && parsedProducts.length > 0) ? parsedProducts : catalogData;
 
     // Force upgrade categories using a version flag to clear any old cached/broken category image URLs
     const CAT_VERSION = "v6";
