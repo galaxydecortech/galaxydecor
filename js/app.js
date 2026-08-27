@@ -95,7 +95,7 @@ class ECommerceApp {
     this.products = (Array.isArray(parsedProducts) && parsedProducts.length > 0) ? parsedProducts : catalogData;
 
     // Force upgrade categories using a version flag to clear any old cached/broken category image URLs
-    const CAT_VERSION = "v6";
+    const CAT_VERSION = "v20260827_v50";
     if (localStorage.getItem("gd_categories_ver") !== CAT_VERSION) {
       localStorage.removeItem("gd_categories");
       localStorage.setItem("gd_categories_ver", CAT_VERSION);

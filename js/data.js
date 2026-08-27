@@ -17,82 +17,16 @@ window.GALAXY_DECOR_DB = {
   // 2. Featured Categories
   categories: [
     {
-      id: "living-room",
-      name: "Living Room Furniture",
-      desc: "Sofas, luxury loungers, and recliners designed for elegance and ultimate relaxation.",
-      image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "bedroom",
-      name: "Bedroom Collection",
-      desc: "Premium beds, luxury dressers, and wardrobes imported from leading Asian creators.",
-      image: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "office",
-      name: "Office Furniture",
-      desc: "Executive desks, ergonomic chairs, and modern commercial workstation arrangements.",
-      image: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "dining",
-      name: "Dining & Restaurant Furniture",
-      desc: "Stunning marble and solid-wood dining sets tailored for homes and cafes.",
-      image: "https://images.unsplash.com/photo-1615066390971-03e4e1c36ddf?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "center-tables",
-      name: "Center Tables",
-      desc: "Luxury focal points featuring glass, marble, and brushed metal structures.",
-      image: "https://images.unsplash.com/photo-1533090161767-e6ffed986c88?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "tea-poys",
-      name: "Tea Poys",
-      desc: "Minimalist side tables and functional companion stands.",
-      image: "https://images.unsplash.com/photo-1594026112284-02bb6f3352fe?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "gift-items",
-      name: "Gift Items",
-      desc: "Exquisite collectibles, metallic desk details, and premium gifts.",
-      image: "https://images.unsplash.com/photo-1549465220-1a8b9238cd48?auto=format&fit=crop&w=600&q=80"
-    },
-    {
       id: "showpieces",
       name: "Showpieces",
       desc: "Handcrafted designer statuettes and abstract modern room highlights.",
       image: "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?auto=format&fit=crop&w=600&q=80"
     },
     {
-      id: "fountains",
-      name: "Decorative Fountains",
-      desc: "Relaxing indoor and outdoor water features with integrated ambient LED glow.",
-      image: "https://images.unsplash.com/photo-1588694926280-3ae414d06ccb?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "vases",
-      name: "Flower Vases",
-      desc: "Fine ceramic, luxury crystal, and metal-inlay statement vases.",
-      image: "https://images.unsplash.com/photo-1581781870027-04212e231e96?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "decor-accessories",
-      name: "Home Décor Accessories",
-      desc: "Bespoke cushions, rugs, and details to tie your room's style together.",
-      image: "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "home-furniture",
-      name: "Home Furniture",
-      desc: "A curation of daily utility, storage, and accent furniture for residential setups.",
-      image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=600&q=80"
-    },
-    {
-      id: "commercial-furniture",
-      name: "Commercial Furniture",
-      desc: "Heavy-duty lounge seating, cafe chairs, and modular lobby solutions.",
-      image: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=600&q=80"
+      id: "flower-pots",
+      name: "FLOWER POTS",
+      desc: "ARTIFICIAL REAL TOUCH FLOWERS AND VASE COLLECTIONS",
+      image: "placeholder_flower-pots"
     }
   ],
 
