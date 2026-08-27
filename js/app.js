@@ -291,7 +291,11 @@ class ECommerceApp {
       }
     } catch (e) {}
 
-    let product = this.products.find(p => p.id === productId);
+    let product = this.products.find(p => String(p.id) === String(productId));
+    if (!product) {
+      const catalog = window.GALAXY_PRODUCTS || window.GALAXY_DECOR_CATALOG || [];
+      product = catalog.find(p => String(p.id) === String(productId));
+    }
     if (!product) return false;
 
     const isOut = this.isOutOfStock(product);
@@ -768,9 +772,11 @@ class ECommerceApp {
     });
 
     content.querySelector(".btn-buy-qv").addEventListener("click", () => {
-      this.addToCart(product.id, 1, false);
-      modal.classList.add("hidden");
-      window.GalaxyRouter.navigate("/checkout");
+      const added = this.addToCart(product.id, 1, false);
+      if (added) {
+        modal.classList.add("hidden");
+        window.GalaxyRouter.navigate("/checkout");
+      }
     });
 
     content.querySelector(".btn-view-details-qv").addEventListener("click", () => {
@@ -900,8 +906,10 @@ class ECommerceApp {
         e.preventDefault();
         e.stopPropagation();
         let id = btn.getAttribute("data-id");
-        this.addToCart(id, 1, false);
-        window.GalaxyRouter.navigate("/checkout");
+        const added = this.addToCart(id, 1, false);
+        if (added) {
+          window.GalaxyRouter.navigate("/checkout");
+        }
       });
     });
   }
@@ -2006,8 +2014,10 @@ class ECommerceApp {
 
     // Buy Now
     document.getElementById("btn-detail-buy").addEventListener("click", () => {
-      this.addToCart(product.id, localQty, false);
-      window.GalaxyRouter.navigate("/checkout");
+      const added = this.addToCart(product.id, localQty, false);
+      if (added) {
+        window.GalaxyRouter.navigate("/checkout");
+      }
     });
 
     // Wishlist toggle
