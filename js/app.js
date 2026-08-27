@@ -1490,6 +1490,18 @@ class ECommerceApp {
     lucide.createIcons();
   }
 
+  calcMaxCatalogPrice() {
+    if (!Array.isArray(this.products) || this.products.length === 0) return 150000;
+    let maxP = 150000;
+    this.products.forEach(p => {
+      if (p) {
+        let val = Number((p.offerPrice && Number(p.offerPrice) > 0) ? p.offerPrice : p.price);
+        if (!isNaN(val) && val > maxP) maxP = val;
+      }
+    });
+    return maxP;
+  }
+
   // --- 4. Render PRODUCTS CATALOG ---
   renderProducts(queryParams) {
     let rawCategory = queryParams.category || "";
@@ -1519,7 +1531,7 @@ class ECommerceApp {
     }
 
 
-    const maxCatalogPrice = Math.max(150000, ...this.products.map(p => Number(p.offerPrice || p.price) || 0));
+    const maxCatalogPrice = this.calcMaxCatalogPrice();
 
     this.appRoot.innerHTML = `
       <section class="py-section catalog-py-section container">
@@ -1559,7 +1571,7 @@ class ECommerceApp {
               <div class="filter-group">
                 <h4 class="filter-group-title">Price Limit</h4>
                 <div class="price-slider-wrap">
-                  <input type="range" id="filter-price-range" min="0" max="${maxCatalogPrice}" step="1000" value="${maxCatalogPrice}" class="range-slider">
+                  <input type="range" id="filter-price-range" min="100" max="${maxCatalogPrice}" step="100" value="${maxCatalogPrice}" class="range-slider">
                   <div class="price-val-display">
                     Max: <strong id="filter-price-val">${window.GalaxyUtils.formatCurrency(maxCatalogPrice)}</strong>
                   </div>
@@ -1681,7 +1693,7 @@ class ECommerceApp {
       initCats = [initialCategory];
     }
 
-    const maxCatalogPrice = Math.max(150000, ...this.products.map(p => Number(p.offerPrice || p.price) || 0));
+    const maxCatalogPrice = this.calcMaxCatalogPrice();
 
     // Local filter state
     const filterState = {
@@ -1713,7 +1725,10 @@ class ECommerceApp {
       }
 
       // 3. Price Range
-      filtered = filtered.filter(p => (p.offerPrice || p.price) <= filterState.maxPrice);
+      filtered = filtered.filter(p => {
+        let pPrice = Number((p.offerPrice && Number(p.offerPrice) > 0) ? p.offerPrice : p.price) || 0;
+        return pPrice <= filterState.maxPrice;
+      });
 
       // 4. Stock Availability
       if (filterState.stockOnly) {
@@ -1722,9 +1737,9 @@ class ECommerceApp {
 
       // 5. Sorting
       if (filterState.sortBy === "price-low") {
-        filtered.sort((a, b) => (a.offerPrice || a.price) - (b.offerPrice || b.price));
+        filtered.sort((a, b) => ((a.offerPrice && Number(a.offerPrice) > 0 ? a.offerPrice : a.price) - (b.offerPrice && Number(b.offerPrice) > 0 ? b.offerPrice : b.price)));
       } else if (filterState.sortBy === "price-high") {
-        filtered.sort((a, b) => (b.offerPrice || b.price) - (a.offerPrice || a.price));
+        filtered.sort((a, b) => ((b.offerPrice && Number(b.offerPrice) > 0 ? b.offerPrice : b.price) - (a.offerPrice && Number(a.offerPrice) > 0 ? a.offerPrice : a.price)));
       } else {
         // latest/default: new items first
         filtered.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
@@ -1757,12 +1772,12 @@ class ECommerceApp {
 
     if (priceSlider) {
       priceSlider.addEventListener("input", (e) => {
-        let val = parseInt(e.target.value);
-        if (priceLabel) priceLabel.textContent = `Max: ${window.GalaxyUtils ? window.GalaxyUtils.formatCurrency(val) : '₹' + val.toLocaleString('en-IN')}`;
+        let val = parseInt(e.target.value, 10);
+        if (priceLabel) priceLabel.textContent = window.GalaxyUtils ? window.GalaxyUtils.formatCurrency(val) : '₹' + val.toLocaleString('en-IN');
       });
 
       priceSlider.addEventListener("change", (e) => {
-        let val = parseInt(e.target.value);
+        let val = parseInt(e.target.value, 10);
         filterState.maxPrice = val;
         applyFiltersAndRender();
       });
@@ -1789,7 +1804,7 @@ class ECommerceApp {
           priceSlider.max = maxCatalogPrice;
           priceSlider.value = maxCatalogPrice;
         }
-        if (priceLabel) priceLabel.textContent = `Max: ${window.GalaxyUtils ? window.GalaxyUtils.formatCurrency(maxCatalogPrice) : '₹' + maxCatalogPrice.toLocaleString('en-IN')}`;
+        if (priceLabel) priceLabel.textContent = window.GalaxyUtils ? window.GalaxyUtils.formatCurrency(maxCatalogPrice) : '₹' + maxCatalogPrice.toLocaleString('en-IN');
         if (stockCheckbox) stockCheckbox.checked = false;
         if (sortSelect) sortSelect.value = "latest";
 
