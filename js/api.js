@@ -61,8 +61,12 @@ window.GalaxyAPI = {
         if (Array.isArray(solutions)) window.GalaxyAppInstance.solutions = solutions;
         if (store && typeof store === 'object' && !store.error) window.GalaxyAppInstance.updateStoreConfig();
 
-        if (window.GalaxyRouter && typeof window.GalaxyRouter.handleRoute === 'function') {
-          window.GalaxyRouter.handleRoute();
+        if (window.GalaxyRouter) {
+          if (typeof window.GalaxyRouter.handleRouting === 'function') {
+            window.GalaxyRouter.handleRouting();
+          } else if (typeof window.GalaxyRouter.handleRoute === 'function') {
+            window.GalaxyRouter.handleRoute();
+          }
         }
       }
 

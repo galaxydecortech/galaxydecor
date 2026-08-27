@@ -33,6 +33,11 @@ class Router {
     return this;
   }
 
+  // Alias for handleRouting
+  handleRoute() {
+    this.handleRouting();
+  }
+
   // Parse path and handle page routing
   handleRouting() {
     // Get full path (e.g. /contact?search=sofa)
