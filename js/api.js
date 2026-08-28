@@ -10,7 +10,7 @@ const API_BASE = (window.location.origin.includes('localhost') || window.locatio
 // Bump DATA_VERSION whenever products/categories change
 // to force-clear old localStorage cache on all devices.
 // ----------------------------------------------------
-const DATA_VERSION = "v20260828_v100"; // <-- bump this when data changes
+const DATA_VERSION = "v20260828_v200"; // <-- bump this when data changes
 const storedVersion = localStorage.getItem("gd_data_version");
 if (storedVersion !== DATA_VERSION) {
   // Clear all old product/category/review cache

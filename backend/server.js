@@ -344,10 +344,10 @@ app.get('/api/orders', requireAdminAuth, async (req, res) => {
       total: row.totalAmount !== undefined ? Number(row.totalAmount) : (Number(row.total) || 0),
       orderStatus: row.status || row.orderStatus || 'New',
       paymentStatus: row.paymentStatus || 'Pending',
-      payment: row.payment || (row.paymentStatus === 'Paid' ? 'Online Gateway' : 'COD'),
-      date: row.createdAt ? new Date(row.createdAt).toLocaleString() : (row.date || new Date().toLocaleString()),
+      payment: row.payment || ((row.paymentStatus === 'Paid' || row.payment === 'ONLINE') ? 'Online Gateway' : 'COD'),
+      date: row.createdAt ? new Date(row.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : (row.date || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })),
       items: typeof row.items === 'string' ? JSON.parse(row.items || '[]') : (row.items || []),
-      history: typeof row.history === 'string' ? JSON.parse(row.history || '[]') : (row.history || [{ status: row.status || 'New', date: row.createdAt ? new Date(row.createdAt).toLocaleString() : new Date().toLocaleString(), note: 'Order placed via website.' }])
+      history: typeof row.history === 'string' ? JSON.parse(row.history || '[]') : (row.history || [{ status: row.status || 'New', date: row.createdAt ? new Date(row.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), note: 'Order placed via website.' }])
     }));
     res.json(orders);
   } catch (err) {
@@ -665,6 +665,7 @@ app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res
           customerAddress: orderDetails.address || '',
           items: orderDetails.items || [],
           totalAmount: finalAmount,
+          payment: 'Online Gateway',
           status: 'New',
           paymentStatus: 'Pending'
         }]);
@@ -723,6 +724,7 @@ app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
         customerAddress: orderDetails.address,
         items: orderDetails.items || [],
         totalAmount: orderDetails.total,
+        payment: 'Online Gateway',
         status: 'New',
         paymentStatus: 'Paid'
       }]);

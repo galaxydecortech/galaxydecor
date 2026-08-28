@@ -2522,22 +2522,20 @@ class ECommerceApp {
 
     if (rCod) {
       const optCod = rCod.querySelector('input[value="COD"]');
-      if (optCod) {
-        optCod.addEventListener("change", () => {
-          rCod.classList.add("selected");
-          if (rOnline) rOnline.classList.remove("selected");
-        });
-      }
+      rCod.addEventListener("click", () => {
+        if (optCod) optCod.checked = true;
+        rCod.classList.add("selected");
+        if (rOnline) rOnline.classList.remove("selected");
+      });
     }
 
     if (rOnline) {
       const optOnline = rOnline.querySelector('input[value="ONLINE"]');
-      if (optOnline) {
-        optOnline.addEventListener("change", () => {
-          rOnline.classList.add("selected");
-          if (rCod) rCod.classList.remove("selected");
-        });
-      }
+      rOnline.addEventListener("click", () => {
+        if (optOnline) optOnline.checked = true;
+        rOnline.classList.add("selected");
+        if (rCod) rCod.classList.remove("selected");
+      });
     }
 
     // Handle Order Confirmation Form Submit
@@ -2626,8 +2624,8 @@ class ECommerceApp {
           payment: payMethod,
           paymentStatus: payMethod === "COD" ? "Pending" : "Paid",
           orderStatus: "New",
-          date: new Date().toLocaleString(),
-          history: [{ status: "New", date: new Date().toLocaleString(), note: "Order placed via website." }]
+          date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+          history: [{ status: "New", date: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }), note: "Order placed via website." }]
         };
 
         if (payMethod === "ONLINE") {

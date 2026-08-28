@@ -1992,9 +1992,9 @@
   <!-- ==========================================================================
        APP BUSINESS LOGIC SCRIPT
        ========================================================================== -->
-  <script src="/js/products_catalog.js?v=20260828_v100"></script>
-  <script src="/js/data.js?v=20260828_v100"></script>
-  <script src="/js/api.js?v=20260828_v100"></script>
+  <script src="/js/products_catalog.js?v=20260828_v200"></script>
+  <script src="/js/data.js?v=20260828_v200"></script>
+  <script src="/js/api.js?v=20260828_v200"></script>
   <script>
     // Password Visibility Toggle Function
     window.togglePasswordVisibility = function () {
@@ -3239,8 +3239,8 @@
         const ordId = item.o.orderId || item.o.id || 'GD-000000';
         const ordName = item.o.name || item.o.customerName || 'Customer';
         const ordPhone = item.o.phone || item.o.customerPhone || '';
-        const ordDate = item.o.date || (item.o.createdAt ? new Date(item.o.createdAt).toLocaleString() : '');
-        const ordPay = item.o.payment || (item.o.paymentStatus === 'Paid' ? 'Online Gateway' : 'COD');
+        const ordDate = item.o.date || (item.o.createdAt ? new Date(item.o.createdAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '');
+        const ordPay = (item.o.payment === 'ONLINE' || item.o.payment === 'Online Gateway' || item.o.paymentMethod === 'ONLINE') ? 'Online Gateway' : (item.o.payment || 'COD');
         const ordPayStatus = item.o.paymentStatus || 'Pending';
         const ordTotal = item.o.total !== undefined ? item.o.total : (item.o.totalAmount || 0);
         const ordStatus = item.o.orderStatus || item.o.status || 'New';
