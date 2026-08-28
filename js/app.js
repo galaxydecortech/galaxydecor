@@ -2691,6 +2691,11 @@ class ECommerceApp {
               "description": "Furniture Showroom Purchase",
               "image": "/assets/logo.png",
               "order_id": razorpayOrder.order_id,       // This links payment to our server order
+              "prefill": {
+                "name": orderDetails.name,
+                "email": orderDetails.email,
+                "contact": orderDetails.phone
+              },
               "handler": async (response) => {
                 // Step 3: Payment completed on Razorpay — now verify on our server
                 try {
