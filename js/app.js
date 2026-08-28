@@ -2761,10 +2761,10 @@ class ECommerceApp {
             const rzp = new Razorpay(rzpOptions);
             rzp.open();
 
-            // Auto-check payment status every 3 seconds while QR modal is open
+            // Auto-check payment status every 2 seconds while QR modal is open
             pollTimer = setInterval(async () => {
               try {
-                const statusRes = await fetch(`${apiBase}/payment/status?orderId=${encodeURIComponent(orderDetails.orderId)}`);
+                const statusRes = await fetch(`${apiBase}/payment/status?orderId=${encodeURIComponent(orderDetails.orderId)}&rzpOrderId=${encodeURIComponent(razorpayOrder.order_id)}`);
                 if (statusRes.ok) {
                   const sData = await statusRes.json();
                   if (sData && sData.paymentStatus === 'Paid') {
@@ -2775,7 +2775,7 @@ class ECommerceApp {
                   }
                 }
               } catch(pollErr) {}
-            }, 3000);
+            }, 2000);
 
           } catch (error) {
             console.error("Razorpay order creation error:", error);

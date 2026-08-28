@@ -665,7 +665,6 @@ app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res
           customerAddress: orderDetails.address || '',
           items: orderDetails.items || [],
           totalAmount: finalAmount,
-          payment: 'Online Gateway',
           status: 'New',
           paymentStatus: 'Pending'
         }]);
@@ -724,7 +723,6 @@ app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
         customerAddress: orderDetails.address,
         items: orderDetails.items || [],
         totalAmount: orderDetails.total,
-        payment: 'Online Gateway',
         status: 'New',
         paymentStatus: 'Paid'
       }]);
@@ -741,19 +739,45 @@ app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
   });
 });
 
-// 9d. Check Payment Status Endpoint for Browser Polling
+// 9d. Check Payment Status Endpoint for Browser Polling & Direct Razorpay API Verification
 app.get(['/api/payment/status', '/payment/status'], async (req, res) => {
   try {
     const orderId = req.query.orderId;
+    const rzpOrderId = req.query.rzpOrderId;
+
     if (!orderId) {
       return res.status(400).json({ error: 'orderId is required' });
     }
-    const { data, error } = await supabase.from('orders').select('id, status, paymentStatus').eq('id', orderId).maybeSingle();
-    if (error) throw error;
-    if (!data) {
-      return res.json({ found: false, paymentStatus: 'Pending' });
+
+    // 1. Check if DB already shows Paid
+    const { data: dbOrder, error } = await supabase.from('orders').select('id, status, paymentStatus').eq('id', orderId).maybeSingle();
+    if (dbOrder && dbOrder.paymentStatus === 'Paid') {
+      return res.json({ found: true, id: dbOrder.id, status: dbOrder.status, paymentStatus: 'Paid' });
     }
-    res.json({ found: true, id: data.id, status: data.status, paymentStatus: data.paymentStatus });
+
+    // 2. If not Paid in DB yet, check directly with Razorpay API!
+    if (razorpayInstance && rzpOrderId) {
+      try {
+        const payments = await razorpayInstance.orders.fetchPayments(rzpOrderId);
+        if (payments && Array.isArray(payments.items) && payments.items.length > 0) {
+          const paidPayment = payments.items.find(p => p.status === 'captured' || p.status === 'authorized');
+          if (paidPayment) {
+            // Payment confirmed on Razorpay! Update Supabase DB immediately
+            await supabase.from('orders').update({ paymentStatus: 'Paid' }).eq('id', orderId);
+            return res.json({ found: true, id: orderId, status: dbOrder ? dbOrder.status : 'New', paymentStatus: 'Paid' });
+          }
+        }
+      } catch (rzpErr) {
+        console.error('Error fetching Razorpay order payments:', rzpErr.message);
+      }
+    }
+
+    res.json({
+      found: Boolean(dbOrder),
+      id: orderId,
+      status: dbOrder ? dbOrder.status : 'New',
+      paymentStatus: dbOrder ? dbOrder.paymentStatus : 'Pending'
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
