@@ -766,6 +766,13 @@ app.get(['/api/payment/status', '/payment/status'], async (req, res) => {
             await supabase.from('orders').update({ paymentStatus: 'Paid' }).eq('id', orderId);
             return res.json({ found: true, id: orderId, status: dbOrder ? dbOrder.status : 'New', paymentStatus: 'Paid' });
           }
+
+          const failedPayment = payments.items.find(p => p.status === 'failed');
+          if (failedPayment) {
+            const failReason = failedPayment.error_description || 'Payment blocked by Razorpay risk check.';
+            await supabase.from('orders').update({ paymentStatus: 'Failed' }).eq('id', orderId);
+            return res.json({ found: true, id: orderId, status: dbOrder ? dbOrder.status : 'New', paymentStatus: 'Failed', error: failReason });
+          }
         }
       } catch (rzpErr) {
         console.error('Error fetching Razorpay order payments:', rzpErr.message);

@@ -2772,6 +2772,12 @@ class ECommerceApp {
                     try { rzp.close(); } catch(e) {}
                     orderDetails.paymentStatus = "Paid";
                     this.finalizeOrder(orderDetails);
+                  } else if (sData && sData.paymentStatus === 'Failed') {
+                    clearInterval(pollTimer);
+                    try { rzp.close(); } catch(e) {}
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = `Confirm Order (₹${orderDetails.total.toLocaleString()})`;
+                    window.GalaxyUtils.showToast("⚠️ Payment Failed: " + (sData.error || "Payment was rejected by Razorpay risk check."), "error");
                   }
                 }
               } catch(pollErr) {}
