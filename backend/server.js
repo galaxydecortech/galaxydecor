@@ -584,7 +584,7 @@ app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res
     });
   }
 
-  const { amount, items, couponCode, currency, receipt, notes } = req.body;
+  const { amount, items, couponCode, currency, receipt, notes, orderDetails } = req.body;
 
   if (!amount || typeof amount !== 'number' || amount <= 0) {
     return res.status(400).json({ error: 'Invalid amount. Must be a positive number.' });
@@ -654,6 +654,26 @@ app.post(['/api/payment/create-order', '/payment/create-order'], async (req, res
 
     const razorpayOrder = await razorpayInstance.orders.create(orderOptions);
 
+    // Pre-save order to Supabase orders table with "Pending" payment status
+    if (orderDetails) {
+      const orderId = orderDetails.orderId || receipt;
+      try {
+        await supabase.from('orders').upsert([{
+          id: orderId,
+          customerName: orderDetails.name || 'Customer',
+          customerPhone: orderDetails.phone || '',
+          customerAddress: orderDetails.address || '',
+          items: orderDetails.items || [],
+          totalAmount: finalAmount,
+          status: 'New',
+          paymentStatus: 'Pending'
+        }]);
+        console.log('Pre-saved order to Supabase:', orderId);
+      } catch (saveErr) {
+        console.error('Failed to pre-save order to Supabase:', saveErr.message);
+      }
+    }
+
     res.json({
       order_id: razorpayOrder.id,
       amount: razorpayOrder.amount,
@@ -696,7 +716,7 @@ app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
   if (orderDetails) {
     const orderId = orderDetails.orderId || 'GD-' + Date.now();
     try {
-      await supabase.from('orders').insert([{
+      await supabase.from('orders').upsert([{
         id: orderId,
         customerName: orderDetails.name,
         customerPhone: orderDetails.phone,
@@ -717,6 +737,24 @@ app.post(['/api/payment/verify', '/payment/verify'], async (req, res) => {
     payment_id: razorpay_payment_id,
     order_id: razorpay_order_id
   });
+});
+
+// 9d. Check Payment Status Endpoint for Browser Polling
+app.get(['/api/payment/status', '/payment/status'], async (req, res) => {
+  try {
+    const orderId = req.query.orderId;
+    if (!orderId) {
+      return res.status(400).json({ error: 'orderId is required' });
+    }
+    const { data, error } = await supabase.from('orders').select('id, status, paymentStatus').eq('id', orderId).maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      return res.json({ found: false, paymentStatus: 'Pending' });
+    }
+    res.json({ found: true, id: data.id, status: data.status, paymentStatus: data.paymentStatus });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ----------------------------------------------------

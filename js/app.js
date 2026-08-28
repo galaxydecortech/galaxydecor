@@ -2657,7 +2657,8 @@ class ECommerceApp {
                 notes: {
                   customer_name: orderDetails.name,
                   customer_phone: orderDetails.phone
-                }
+                },
+                orderDetails: orderDetails
               })
             });
 
@@ -2682,6 +2683,8 @@ class ECommerceApp {
               throw new Error(errorMsg);
             }
 
+            let pollTimer = null;
+
             // Step 2: Open Razorpay Checkout with the server-created order
             const rzpOptions = {
               "key": razorpayOrder.key_id,
@@ -2697,6 +2700,7 @@ class ECommerceApp {
                 "contact": orderDetails.phone
               },
               "handler": async (response) => {
+                if (pollTimer) clearInterval(pollTimer);
                 // Step 3: Payment completed on Razorpay — now verify on our server
                 try {
                   const verifyResponse = await fetch(`${apiBase}/payment/verify`, {
@@ -2745,44 +2749,35 @@ class ECommerceApp {
               },
               "modal": {
                 "ondismiss": () => {
-                  // User closed the Razorpay popup without paying
+                  if (pollTimer) clearInterval(pollTimer);
                   submitBtn.disabled = false;
                   submitBtn.textContent = `Confirm Order (₹${orderDetails.total.toLocaleString()})`;
-                  window.GalaxyUtils.showToast("Payment was cancelled.", "info");
+                  window.GalaxyUtils.showToast("Payment window closed.", "info");
                 }
               },
               "theme": {
                 "color": "#C9A227"
-              },
-              "prefill": {
-                "name": orderDetails.name || "",
-                "email": orderDetails.email || "",
-                "contact": (orderDetails.phone || "").replace(/[^0-9]/g, "").slice(-10)
-              },
-              "config": {
-                "display": {
-                  "blocks": {
-                    "upi": {
-                      "name": "Pay via UPI QR",
-                      "instruments": [
-                        {
-                          "method": "upi",
-                          "flows": ["qr", "intent"]
-                        }
-                      ]
-                    }
-                  },
-                  "sequence": ["block.upi"],
-                  "preferences": {
-                    "show_default_blocks": true
-                  }
-                }
               }
             };
 
-
             const rzp = new Razorpay(rzpOptions);
             rzp.open();
+
+            // Auto-check payment status every 3 seconds while QR modal is open
+            pollTimer = setInterval(async () => {
+              try {
+                const statusRes = await fetch(`${apiBase}/payment/status?orderId=${encodeURIComponent(orderDetails.orderId)}`);
+                if (statusRes.ok) {
+                  const sData = await statusRes.json();
+                  if (sData && sData.paymentStatus === 'Paid') {
+                    clearInterval(pollTimer);
+                    try { rzp.close(); } catch(e) {}
+                    orderDetails.paymentStatus = "Paid";
+                    this.finalizeOrder(orderDetails);
+                  }
+                }
+              } catch(pollErr) {}
+            }, 3000);
 
           } catch (error) {
             console.error("Razorpay order creation error:", error);
