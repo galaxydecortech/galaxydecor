@@ -15,11 +15,11 @@
   <script>
     (function() {
       if (sessionStorage.getItem("gd_admin_logged_in") === "true") {
-        document.write('<style>#login-screen{display:none !important;}#admin-dashboard-app{display:block !important;}</style>');
+        document.write('<style id="pre-render-auth-style">#login-screen{display:none !important;}#admin-dashboard-app{display:block !important;}</style>');
       }
       var savedTab = (window.location.hash ? window.location.hash.replace("#", "") : null) || sessionStorage.getItem("gd_admin_active_tab");
       if (savedTab && savedTab !== "overview") {
-        document.write('<style>.menu-item[data-tab="overview"]{background:transparent!important;color:inherit!important;}.menu-item[data-tab="' + savedTab + '"]{background:rgba(201,162,39,0.12)!important;color:var(--color-accent,#C9A227)!important;}#tab-overview{display:none!important;}#tab-' + savedTab + '{display:block!important;}</style>');
+        document.write('<style id="pre-render-tab-style">.menu-item[data-tab="overview"]{background:transparent;color:inherit;}.menu-item[data-tab="' + savedTab + '"]{background:rgba(201,162,39,0.12);color:var(--color-accent,#C9A227);}#tab-overview{display:none;}#tab-' + savedTab + '{display:block;}</style>');
       }
     })();
   </script>
@@ -2250,6 +2250,9 @@
       };
 
       const activateTab = (targetTab) => {
+        const preStyle = document.getElementById("pre-render-tab-style");
+        if (preStyle) preStyle.remove();
+
         const menuItem = document.querySelector(`.menu-item[data-tab="${targetTab}"]`);
         const tabSec = document.getElementById("tab-" + targetTab);
 
@@ -2292,6 +2295,12 @@
           const targetTab = btn.getAttribute("data-tab");
           activateTab(targetTab);
         });
+      });
+
+      // Hashchange listener for instant URL hash tab navigation
+      window.addEventListener("hashchange", () => {
+        const h = window.location.hash.replace("#", "").trim();
+        if (h) activateTab(h);
       });
 
       // Restore active tab on load/refresh
