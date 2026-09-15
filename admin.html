@@ -11,11 +11,15 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  <!-- Instant Auth Guard to prevent login screen flicker on refresh -->
+  <!-- Instant Auth & Tab Pre-render Guard to prevent screen flicker on refresh -->
   <script>
     (function() {
       if (sessionStorage.getItem("gd_admin_logged_in") === "true") {
         document.write('<style>#login-screen{display:none !important;}#admin-dashboard-app{display:block !important;}</style>');
+      }
+      var savedTab = (window.location.hash ? window.location.hash.replace("#", "") : null) || sessionStorage.getItem("gd_admin_active_tab");
+      if (savedTab && savedTab !== "overview") {
+        document.write('<style>.menu-item[data-tab="overview"]{background:transparent!important;color:inherit!important;}.menu-item[data-tab="' + savedTab + '"]{background:rgba(201,162,39,0.12)!important;color:var(--color-accent,#C9A227)!important;}#tab-overview{display:none!important;}#tab-' + savedTab + '{display:block!important;}</style>');
       }
     })();
   </script>
