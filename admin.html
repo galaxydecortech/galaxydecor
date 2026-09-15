@@ -2168,32 +2168,38 @@
       if (window.GalaxyAPI) {
         const logoutBtn = document.getElementById("btn-logout");
         if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> Syncing...`;
+        let fetchResult = null;
+        let adminResult = null;
         try {
           console.log("👉 [SHOW DASHBOARD] Syncing catalog & admin data from backend API...");
-          await window.GalaxyAPI.fetchAllData();
-          await window.GalaxyAPI.fetchAdminData();
+          fetchResult = await window.GalaxyAPI.fetchAllData();
+          adminResult = await window.GalaxyAPI.fetchAdminData();
           console.log("✅ [SHOW DASHBOARD] Data sync complete!");
         } catch (err) {
           console.warn("⚠️ [SHOW DASHBOARD] Backend sync warning:", err);
         }
 
-        // Re-read synced data into state variables safely
-        let pProds = null, pCats = null, pStore = null, pCoup = null, pOrds = null, pEnqs = null, pRevs = null;
-        try { pProds = JSON.parse(localStorage.getItem("gd_products")); } catch (e) { }
-        try { pCats = JSON.parse(localStorage.getItem("gd_categories")); } catch (e) { }
-        try { pStore = JSON.parse(localStorage.getItem("gd_store")); } catch (e) { }
-        try { pCoup = JSON.parse(localStorage.getItem("gd_coupons")); } catch (e) { }
-        try { pOrds = JSON.parse(localStorage.getItem("gd_orders")); } catch (e) { }
-        try { pEnqs = JSON.parse(localStorage.getItem("gd_enquiries")); } catch (e) { }
-        try { pRevs = JSON.parse(localStorage.getItem("gd_reviews")); } catch (e) { }
+        if (fetchResult && fetchResult.success) {
+          if (Array.isArray(fetchResult.products)) products = fetchResult.products;
+          if (Array.isArray(fetchResult.categories)) categories = fetchResult.categories;
+          if (fetchResult.store && typeof fetchResult.store === 'object' && !fetchResult.store.error) store = fetchResult.store;
+          if (Array.isArray(fetchResult.reviews)) reviews = fetchResult.reviews;
+        } else {
+          try { products = JSON.parse(localStorage.getItem("gd_products")) || products; } catch (e) { }
+          try { categories = JSON.parse(localStorage.getItem("gd_categories")) || categories; } catch (e) { }
+          try { store = JSON.parse(localStorage.getItem("gd_store")) || store; } catch (e) { }
+          try { reviews = JSON.parse(localStorage.getItem("gd_reviews")) || reviews; } catch (e) { }
+        }
 
-        products = Array.isArray(pProds) ? pProds : (window.GALAXY_DECOR_DB ? window.GALAXY_DECOR_DB.products : []);
-        categories = Array.isArray(pCats) ? pCats : (window.GALAXY_DECOR_DB ? window.GALAXY_DECOR_DB.categories : []);
-        store = (pStore && typeof pStore === 'object' && !pStore.error) ? pStore : (window.GALAXY_DECOR_DB ? window.GALAXY_DECOR_DB.store : {});
-        coupons = Array.isArray(pCoup) ? pCoup : defaultCoupons;
-        orders = Array.isArray(pOrds) ? pOrds : [];
-        enquiries = Array.isArray(pEnqs) ? pEnqs : [];
-        reviews = Array.isArray(pRevs) ? pRevs : (window.GALAXY_DECOR_DB ? window.GALAXY_DECOR_DB.reviews : []);
+        if (adminResult && adminResult.success) {
+          if (Array.isArray(adminResult.orders)) orders = adminResult.orders;
+          if (Array.isArray(adminResult.enquiries)) enquiries = adminResult.enquiries;
+          if (Array.isArray(adminResult.coupons)) coupons = adminResult.coupons;
+        } else {
+          try { orders = JSON.parse(localStorage.getItem("gd_orders")) || orders; } catch (e) { }
+          try { enquiries = JSON.parse(localStorage.getItem("gd_enquiries")) || enquiries; } catch (e) { }
+          try { coupons = JSON.parse(localStorage.getItem("gd_coupons")) || coupons; } catch (e) { }
+        }
 
         if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="log-out"></i> Logout`;
       }
