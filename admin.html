@@ -2156,7 +2156,7 @@
       }
     });
 
-    window.showDashboard = async function () {
+    window.showDashboard = function () {
       console.log("👉 [SHOW DASHBOARD] Executing showDashboard()...");
       const loginScreenEl = document.getElementById("login-screen");
       const appScreenEl = document.getElementById("admin-dashboard-app");
@@ -2164,47 +2164,8 @@
       if (loginScreenEl) loginScreenEl.style.display = "none";
       if (appScreenEl) appScreenEl.style.display = "block";
 
-      // Sync with real backend before rendering
-      if (window.GalaxyAPI) {
-        const logoutBtn = document.getElementById("btn-logout");
-        if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> Syncing...`;
-        let fetchResult = null;
-        let adminResult = null;
-        try {
-          console.log("👉 [SHOW DASHBOARD] Syncing catalog & admin data from backend API...");
-          fetchResult = await window.GalaxyAPI.fetchAllData();
-          adminResult = await window.GalaxyAPI.fetchAdminData();
-          console.log("✅ [SHOW DASHBOARD] Data sync complete!");
-        } catch (err) {
-          console.warn("⚠️ [SHOW DASHBOARD] Backend sync warning:", err);
-        }
-
-        if (fetchResult && fetchResult.success) {
-          if (Array.isArray(fetchResult.products)) products = fetchResult.products;
-          if (Array.isArray(fetchResult.categories)) categories = fetchResult.categories;
-          if (fetchResult.store && typeof fetchResult.store === 'object' && !fetchResult.store.error) store = fetchResult.store;
-          if (Array.isArray(fetchResult.reviews)) reviews = fetchResult.reviews;
-        } else {
-          try { products = JSON.parse(localStorage.getItem("gd_products")) || products; } catch (e) { }
-          try { categories = JSON.parse(localStorage.getItem("gd_categories")) || categories; } catch (e) { }
-          try { store = JSON.parse(localStorage.getItem("gd_store")) || store; } catch (e) { }
-          try { reviews = JSON.parse(localStorage.getItem("gd_reviews")) || reviews; } catch (e) { }
-        }
-
-        if (adminResult && adminResult.success) {
-          if (Array.isArray(adminResult.orders)) orders = adminResult.orders;
-          if (Array.isArray(adminResult.enquiries)) enquiries = adminResult.enquiries;
-          if (Array.isArray(adminResult.coupons)) coupons = adminResult.coupons;
-        } else {
-          try { orders = JSON.parse(localStorage.getItem("gd_orders")) || orders; } catch (e) { }
-          try { enquiries = JSON.parse(localStorage.getItem("gd_enquiries")) || enquiries; } catch (e) { }
-          try { coupons = JSON.parse(localStorage.getItem("gd_coupons")) || coupons; } catch (e) { }
-        }
-
-        if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="log-out"></i> Logout`;
-      }
-
-      console.log("👉 [SHOW DASHBOARD] Rendering UI tabs and stats...");
+      // 1. Render UI INSTANTLY using cached/memory state (<0.05s)
+      console.log("👉 [SHOW DASHBOARD] Instant rendering UI tabs and stats...");
       try {
         initTabNavigation();
         loadAllStats();
@@ -2216,37 +2177,100 @@
         renderSettingsTab();
         populateFormDropdowns();
         if (window.lucide) lucide.createIcons();
-        console.log("🎉 [SHOW DASHBOARD] Admin Dashboard successfully loaded and displayed!");
+        console.log("🎉 [SHOW DASHBOARD] Admin Dashboard UI instantly rendered!");
       } catch (renderErr) {
-        console.error("❌ [SHOW DASHBOARD] Error rendering UI tabs:", renderErr);
+        console.error("❌ [SHOW DASHBOARD] Error rendering initial UI tabs:", renderErr);
+      }
+
+      // 2. Background live sync from Supabase DB (asynchronous & non-blocking)
+      if (window.GalaxyAPI) {
+        const logoutBtn = document.getElementById("btn-logout");
+        if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> Syncing...`;
+
+        Promise.all([
+          window.GalaxyAPI.fetchAllData(),
+          window.GalaxyAPI.fetchAdminData()
+        ]).then(([fetchResult, adminResult]) => {
+          if (fetchResult && fetchResult.success) {
+            if (Array.isArray(fetchResult.products)) products = fetchResult.products;
+            if (Array.isArray(fetchResult.categories)) categories = fetchResult.categories;
+            if (fetchResult.store && typeof fetchResult.store === 'object' && !fetchResult.store.error) store = fetchResult.store;
+            if (Array.isArray(fetchResult.reviews)) reviews = fetchResult.reviews;
+          }
+          if (adminResult && adminResult.success) {
+            if (Array.isArray(adminResult.orders)) orders = adminResult.orders;
+            if (Array.isArray(adminResult.enquiries)) enquiries = adminResult.enquiries;
+            if (Array.isArray(adminResult.coupons)) coupons = adminResult.coupons;
+          }
+
+          // Re-render live stats & active tab smoothly
+          loadAllStats();
+          const activeTab = sessionStorage.getItem("gd_admin_active_tab") || (window.location.hash ? window.location.hash.replace("#", "") : "overview");
+          if (activeTab === "overview") renderOverviewTab();
+          else if (activeTab === "categories") renderCategoriesTab();
+          else if (activeTab === "products") renderProductsTab();
+          else if (activeTab === "orders") renderOrdersTab();
+          else if (activeTab === "enquiries") renderEnquiriesTab();
+          else if (activeTab === "reviews") renderReviewsTab();
+          else if (activeTab === "settings") renderSettingsTab();
+
+          populateFormDropdowns();
+          if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="log-out"></i> Logout`;
+          if (window.lucide) lucide.createIcons();
+          console.log("✅ [SHOW DASHBOARD] Live background data sync complete!");
+        }).catch(err => {
+          console.warn("⚠️ [SHOW DASHBOARD] Background sync warning:", err);
+          if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="log-out"></i> Logout`;
+          if (window.lucide) lucide.createIcons();
+        });
       }
     };
 
-    // 3. Tab Navigation Manager
+    // 3. Tab Navigation Manager with Hash and SessionStorage persistence
     function initTabNavigation() {
       const menuItems = document.querySelectorAll(".menu-item");
       const tabSections = document.querySelectorAll(".tab-section");
 
+      const getActiveTabFromUrlOrStorage = () => {
+        const hash = window.location.hash.replace("#", "").trim();
+        const storedTab = sessionStorage.getItem("gd_admin_active_tab");
+        return hash || storedTab || "overview";
+      };
+
+      const activateTab = (targetTab) => {
+        const menuItem = document.querySelector(`.menu-item[data-tab="${targetTab}"]`);
+        const tabSec = document.getElementById("tab-" + targetTab);
+
+        if (!menuItem || !tabSec) return false;
+
+        menuItems.forEach(mi => mi.classList.remove("active"));
+        menuItem.classList.add("active");
+
+        tabSections.forEach(sec => sec.classList.remove("active"));
+        tabSec.classList.add("active");
+
+        sessionStorage.setItem("gd_admin_active_tab", targetTab);
+        if (window.location.hash !== "#" + targetTab) {
+          history.replaceState(null, "", "#" + targetTab);
+        }
+
+        // Trigger tab render
+        if (targetTab === "overview") renderOverviewTab();
+        else if (targetTab === "categories") renderCategoriesTab();
+        else if (targetTab === "products") renderProductsTab();
+        else if (targetTab === "orders") renderOrdersTab();
+        else if (targetTab === "enquiries") renderEnquiriesTab();
+        else if (targetTab === "reviews") renderReviewsTab();
+        else if (targetTab === "settings") renderSettingsTab();
+
+        if (window.lucide) lucide.createIcons();
+        return true;
+      };
+
       menuItems.forEach(item => {
         item.addEventListener("click", () => {
           const tab = item.getAttribute("data-tab");
-
-          menuItems.forEach(mi => mi.classList.remove("active"));
-          item.classList.add("active");
-
-          tabSections.forEach(sec => sec.classList.remove("active"));
-          document.getElementById("tab-" + tab).classList.add("active");
-
-          // Custom tab reload logic
-          if (tab === "overview") renderOverviewTab();
-          else if (tab === "categories") renderCategoriesTab();
-          else if (tab === "products") renderProductsTab();
-          else if (tab === "orders") renderOrdersTab();
-          else if (tab === "enquiries") renderEnquiriesTab();
-          else if (tab === "reviews") renderReviewsTab();
-          else if (tab === "settings") renderSettingsTab();
-
-          lucide.createIcons();
+          activateTab(tab);
         });
       });
 
@@ -2254,10 +2278,13 @@
       document.querySelectorAll(".btn-go-tab").forEach(btn => {
         btn.addEventListener("click", () => {
           const targetTab = btn.getAttribute("data-tab");
-          const correspondingMenuItem = document.querySelector(`.menu-item[data-tab="${targetTab}"]`);
-          if (correspondingMenuItem) correspondingMenuItem.click();
+          activateTab(targetTab);
         });
       });
+
+      // Restore active tab on load/refresh
+      const savedTab = getActiveTabFromUrlOrStorage();
+      activateTab(savedTab);
     }
 
     // Save helpers
