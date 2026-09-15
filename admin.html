@@ -11,6 +11,14 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+  <!-- Instant Auth Guard to prevent login screen flicker on refresh -->
+  <script>
+    (function() {
+      if (sessionStorage.getItem("gd_admin_logged_in") === "true") {
+        document.write('<style>#login-screen{display:none !important;}#admin-dashboard-app{display:block !important;}</style>');
+      }
+    })();
+  </script>
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="/assets/logo.png">
   <link rel="apple-touch-icon" href="/assets/logo.png">
