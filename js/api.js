@@ -62,12 +62,9 @@ window.GalaxyAPI = {
         if (Array.isArray(solutions)) window.GalaxyAppInstance.solutions = solutions;
         if (store && typeof store === 'object' && !store.error) window.GalaxyAppInstance.updateStoreConfig();
 
-        if (window.GalaxyRouter) {
-          if (typeof window.GalaxyRouter.handleRouting === 'function') {
-            window.GalaxyRouter.handleRouting();
-          } else if (typeof window.GalaxyRouter.handleRoute === 'function') {
-            window.GalaxyRouter.handleRoute();
-          }
+        // Re-render catalog grid smoothly without resetting scroll position or re-triggering full router navigation
+        if (typeof window.GalaxyAppInstance.renderCatalogPage === 'function' && window.location.pathname.includes('/products')) {
+          window.GalaxyAppInstance.renderCatalogPage();
         }
       }
 
