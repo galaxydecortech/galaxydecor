@@ -171,7 +171,7 @@ app.delete('/api/categories/:id', requireAdminAuth, async (req, res) => {
 // ----------------------------------------------------
 app.get('/api/products', async (req, res) => {
   try {
-    const { data, error } = await supabase.from('products').select('*');
+    const { data, error } = await supabase.from('products').select('*').order('id', { ascending: false });
     if (error) throw error;
     const products = (data || []).map(row => {
       const parsedSpecs = typeof row.specs === 'string' ? JSON.parse(row.specs || '{}') : (row.specs || {});

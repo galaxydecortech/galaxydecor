@@ -1755,8 +1755,13 @@ class ECommerceApp {
       } else if (filterState.sortBy === "price-high") {
         filtered.sort((a, b) => ((b.offerPrice && Number(b.offerPrice) > 0 ? b.offerPrice : b.price) - (a.offerPrice && Number(a.offerPrice) > 0 ? a.offerPrice : a.price)));
       } else {
-        // latest/default: new items first
-        filtered.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+        // latest/default: newest products first by timestamp ID, fallback to isNew flag
+        filtered.sort((a, b) => {
+          const timeA = parseInt(String(a.id || "").replace(/\D/g, "")) || 0;
+          const timeB = parseInt(String(b.id || "").replace(/\D/g, "")) || 0;
+          if (timeA && timeB && timeA !== timeB) return timeB - timeA;
+          return (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0);
+        });
       }
 
       // Render items
