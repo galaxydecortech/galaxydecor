@@ -2785,7 +2785,12 @@
 
       // Sync to real backend
       if (window.GalaxyAPI) {
-        window.GalaxyAPI.syncEntity('products' + (!isNew ? '/' + productObj.id : ''), isNew ? 'POST' : 'PUT', productObj);
+        window.GalaxyAPI.syncEntity('products' + (!isNew ? '/' + productObj.id : ''), isNew ? 'POST' : 'PUT', productObj).then(res => {
+          if (res && res.error) {
+            console.warn("Product sync to backend warning:", res.error);
+            window.GalaxyUtils.showToast("Database sync warning: " + res.error, "error");
+          }
+        });
       }
 
       prodModal.classList.remove("active");

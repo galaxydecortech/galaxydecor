@@ -192,12 +192,18 @@ window.GalaxyAPI = {
         },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error(`Failed to ${method} ${endpoint}`);
+      if (!response.ok) {
+        let errText = `Failed to ${method} ${endpoint}`;
+        try {
+          const errJson = await response.json();
+          if (errJson && errJson.error) errText = errJson.error;
+        } catch (e) {}
+        throw new Error(errText);
+      }
       return await response.json();
     } catch (error) {
       console.warn(`Failed to sync ${endpoint} to backend:`, error);
-      // We don't throw, we let the frontend keep running with its local state
-      return null;
+      return { error: error.message };
     }
   },
 

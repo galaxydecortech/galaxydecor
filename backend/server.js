@@ -33,7 +33,8 @@ if (razorpayKeyId && razorpayKeySecret && !razorpayKeyId.includes('YOUR_KEY')) {
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Run catalog sync auto-generator if products_catalog.js is missing
 const catalogScriptPath = path.join(__dirname, '..', 'js', 'products_catalog.js');
