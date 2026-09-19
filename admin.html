@@ -2632,8 +2632,8 @@
     }
 
     // Lightweight HTML5 Canvas Image Compression Helper
-    // Downscales high-resolution images & compresses to WebP/JPEG to prevent huge Base64 payloads
-    function compressImageFile(file, maxDimension = 800, quality = 0.75) {
+    // Downscales high-resolution images & compresses to WebP/JPEG to prevent huge Base64 payloads (~40KB per image)
+    function compressImageFile(file, maxDimension = 720, quality = 0.65) {
       return new Promise((resolve) => {
         if (!file || !file.type.startsWith("image/")) {
           return resolve(null);
@@ -2685,7 +2685,7 @@
       if (filesToProcess.length === 0) return;
 
       for (const file of filesToProcess) {
-        const compressedBase64 = await compressImageFile(file, 800, 0.75);
+        const compressedBase64 = await compressImageFile(file, 720, 0.65);
         if (compressedBase64) {
           window.currentFormGallery.push(compressedBase64);
         }
@@ -3063,7 +3063,7 @@
 
     async function applyUploadedCategoryImage(file) {
       if (!file || !file.type.startsWith("image/")) return;
-      const compressedBase64 = await compressImageFile(file, 800, 0.75);
+      const compressedBase64 = await compressImageFile(file, 720, 0.65);
       if (compressedBase64) {
         document.getElementById("form-cimage").value = compressedBase64;
         const preview = document.getElementById("cimg-upload-preview");
