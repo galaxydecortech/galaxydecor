@@ -53,7 +53,7 @@ if (!fs.existsSync(catalogScriptPath)) {
 // This middleware re-adds the /api prefix so all defined routes match.
 // ----------------------------------------------------
 app.use((req, res, next) => {
-  if (req.url && !req.url.startsWith('/api') && req.url !== '/') {
+  if (process.env.VERCEL && req.url && !req.url.startsWith('/api') && req.url !== '/') {
     req.url = '/api' + req.url;
     req.originalUrl = req.url;
     req._parsedUrl = undefined;
