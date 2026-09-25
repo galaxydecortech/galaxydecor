@@ -1734,7 +1734,7 @@
         <h2 id="product-modal-title">Add New Product</h2>
         <button id="close-product-modal" class="close-modal-btn"><i data-lucide="x"></i></button>
       </div>
-      <form id="product-form">
+      <form id="product-form" novalidate>
         <input type="hidden" id="form-product-index">
         <div class="form-group">
           <label for="form-pname">Product Name</label>
@@ -2004,9 +2004,9 @@
   <!-- ==========================================================================
        APP BUSINESS LOGIC SCRIPT
        ========================================================================== -->
-  <script src="/js/products_catalog.js?v=20260925_v500"></script>
-  <script src="/js/data.js?v=20260925_v500"></script>
-  <script src="/js/api.js?v=20260925_v500"></script>
+  <script src="/js/products_catalog.js?v=20260925_v600"></script>
+  <script src="/js/data.js?v=20260925_v600"></script>
+  <script src="/js/api.js?v=20260925_v600"></script>
   <script>
     // Password Visibility Toggle Function
     window.togglePasswordVisibility = function () {
@@ -2715,6 +2715,34 @@
     // Add / Edit submission
     productForm.addEventListener("submit", (e) => {
       e.preventDefault();
+
+      // Custom Validation & Auto-scroll for missing required fields
+      const requiredInputs = [
+        { id: "form-pname", label: "Product Name" },
+        { id: "form-pcategory", label: "Category" },
+        { id: "form-pprice", label: "Original Price" },
+        { id: "form-pshipping", label: "Shipping Surcharge" },
+        { id: "form-pshortdesc", label: "Short Description" },
+        { id: "form-pdesc", label: "Full Description" },
+        { id: "form-spec-dimensions", label: "Dimensions" },
+        { id: "form-spec-material", label: "Material" },
+        { id: "form-spec-finish", label: "Finish / Detail" },
+        { id: "form-pstockcount", label: "Stock Quantity" }
+      ];
+
+      for (const req of requiredInputs) {
+        const el = document.getElementById(req.id);
+        if (!el || !el.value || el.value.trim() === "") {
+          el.style.border = "2px solid #ef4444";
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.focus();
+          if (window.GalaxyUtils && typeof window.GalaxyUtils.showToast === 'function') {
+            window.GalaxyUtils.showToast(`Please enter ${req.label}`, "error");
+          }
+          setTimeout(() => { el.style.border = ""; }, 3500);
+          return false;
+        }
+      }
 
       const idx = document.getElementById("form-product-index").value;
       const isNew = idx === "";
