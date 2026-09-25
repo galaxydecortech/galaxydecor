@@ -2004,9 +2004,9 @@
   <!-- ==========================================================================
        APP BUSINESS LOGIC SCRIPT
        ========================================================================== -->
-  <script src="/js/products_catalog.js?v=20260828_v400"></script>
-  <script src="/js/data.js?v=20260828_v400"></script>
-  <script src="/js/api.js?v=20260828_v400"></script>
+  <script src="/js/products_catalog.js?v=20260925_v500"></script>
+  <script src="/js/data.js?v=20260925_v500"></script>
+  <script src="/js/api.js?v=20260925_v500"></script>
   <script>
     // Password Visibility Toggle Function
     window.togglePasswordVisibility = function () {
@@ -2783,14 +2783,23 @@
 
       saveProducts();
 
-      // Sync to real backend
-      if (window.GalaxyAPI) {
-        window.GalaxyAPI.syncEntity('products' + (!isNew ? '/' + productObj.id : ''), isNew ? 'POST' : 'PUT', productObj).then(res => {
-          if (res && res.error) {
-            console.warn("Product sync to backend warning:", res.error);
-            window.GalaxyUtils.showToast("Database sync warning: " + res.error, "error");
+      // Sync to real backend safely without throwing uncaught promises
+      if (window.GalaxyAPI && typeof window.GalaxyAPI.syncEntity === 'function') {
+        try {
+          const syncPromise = window.GalaxyAPI.syncEntity('products' + (!isNew ? '/' + productObj.id : ''), isNew ? 'POST' : 'PUT', productObj);
+          if (syncPromise && typeof syncPromise.then === 'function') {
+            syncPromise.then(res => {
+              if (res && res.error) {
+                console.warn("Product sync to backend warning:", res.error);
+                window.GalaxyUtils.showToast("Database sync warning: " + res.error, "error");
+              }
+            }).catch(err => {
+              console.warn("Product sync network error:", err);
+            });
           }
-        });
+        } catch (syncErr) {
+          console.warn("Sync execution error:", syncErr);
+        }
       }
 
       prodModal.classList.remove("active");
