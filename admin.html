@@ -1848,8 +1848,7 @@
           <input type="number" id="form-pstockcount" class="form-control" value="5" min="0" required>
         </div>
 
-        <button type="submit" class="btn btn-gold btn-block" style="width:100%; margin-top:1.5rem;">Save Sourced
-          Record</button>
+        <button type="button" id="btn-save-product" onclick="saveProductForm(event)" class="btn btn-gold btn-block" style="width:100%; margin-top:1.5rem;">Save Sourced Record</button>
       </form>
     </div>
   </div>
@@ -2004,9 +2003,9 @@
   <!-- ==========================================================================
        APP BUSINESS LOGIC SCRIPT
        ========================================================================== -->
-  <script src="/js/products_catalog.js?v=20260925_v600"></script>
-  <script src="/js/data.js?v=20260925_v600"></script>
-  <script src="/js/api.js?v=20260925_v600"></script>
+  <script src="/js/products_catalog.js?v=20260925_v700"></script>
+  <script src="/js/data.js?v=20260925_v700"></script>
+  <script src="/js/api.js?v=20260925_v700"></script>
   <script>
     // Password Visibility Toggle Function
     window.togglePasswordVisibility = function () {
@@ -2712,9 +2711,8 @@
     });
 
 
-    // Add / Edit submission
-    productForm.addEventListener("submit", (e) => {
-      e.preventDefault();
+    window.saveProductForm = function (e) {
+      if (e && e.preventDefault) e.preventDefault();
 
       // Custom Validation & Auto-scroll for missing required fields
       const requiredInputs = [
@@ -2757,7 +2755,7 @@
         Finish: document.getElementById("form-spec-finish").value.trim()
       };
 
-      let powerVal = document.getElementById("form-spec-power").value.trim();
+      let powerVal = (document.getElementById("form-spec-power")?.value || "").trim();
       if (powerVal) {
         let cat = document.getElementById("form-pcategory").value;
         if (cat === "showpieces" && powerVal.includes("Set")) specs.Quantity = powerVal;
@@ -2768,7 +2766,7 @@
       let formImages = [];
       try {
         formImages = JSON.parse(document.getElementById("form-pimage").value || "[]");
-      } catch (e) { }
+      } catch (err) { }
 
       let imageVal = "";
       let galleryArr = [];
@@ -2805,7 +2803,6 @@
       if (isNew) {
         products.push(productObj);
       } else {
-        // Keep original galleries / custom status if modified
         products[idx] = productObj;
       }
 
@@ -2830,10 +2827,17 @@
         }
       }
 
-      prodModal.classList.remove("active");
-      renderProductsTab();
-      window.GalaxyUtils.showToast("Product catalogue updated successfully.");
-    });
+      const prodModal = document.getElementById("product-modal");
+      if (prodModal) prodModal.classList.remove("active");
+      if (typeof renderProductsTab === 'function') renderProductsTab();
+      if (window.GalaxyUtils && typeof window.GalaxyUtils.showToast === 'function') {
+        window.GalaxyUtils.showToast("Product catalogue updated successfully.");
+      }
+    };
+
+    if (productForm) {
+      productForm.addEventListener("submit", window.saveProductForm);
+    }
 
     function deleteProduct(index) {
       if (confirm(`Are you sure you want to delete the product "${products[index].name}" from storefront?`)) {
