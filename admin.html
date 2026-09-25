@@ -2309,7 +2309,11 @@
 
     // Save helpers
     function saveProducts() {
-      localStorage.setItem("gd_products", JSON.stringify(products));
+      try {
+        localStorage.setItem("gd_products", JSON.stringify(products));
+      } catch (error) {
+        console.warn("Unable to persist product cache to localStorage:", error);
+      }
       loadAllStats();
     }
 
