@@ -196,7 +196,7 @@ class ECommerceApp {
       if (item && item.product && item.product.id) {
         const fresh = this.products.find(p => String(p.id) === String(item.product.id));
         if (fresh) {
-          item.product = { ...fresh };
+          item.product = this.sanitizeCartProduct(fresh);
           
           const isOut = this.isOutOfStock(fresh);
           const availableStock = this.getAvailableStock(fresh);
@@ -229,7 +229,15 @@ class ECommerceApp {
 
     this.cart = updatedCart;
     if (changed) {
-      localStorage.setItem("gd_cart", JSON.stringify(this.cart));
+      try {
+        const sanitizedCart = this.cart.map(i => ({
+          product: this.sanitizeCartProduct(i.product),
+          quantity: i.quantity
+        }));
+        localStorage.setItem("gd_cart", JSON.stringify(sanitizedCart));
+      } catch (e) {
+        console.warn("localStorage quota exceeded while saving gd_cart:", e);
+      }
       this.updateBadges();
       this.renderCartDrawer();
     }
@@ -293,14 +301,41 @@ class ECommerceApp {
     this.renderCartDrawerItems();
   }
 
+  sanitizeCartProduct(p) {
+    if (!p) return null;
+    return {
+      id: p.id,
+      name: p.name || "",
+      category: p.category || "",
+      price: Number(p.price) || 0,
+      offerPrice: Number(p.offerPrice) || 0,
+      image: p.image || "",
+      inStock: p.inStock !== false,
+      stockCount: (p.stockCount !== undefined && p.stockCount !== null) ? Number(p.stockCount) : null,
+      shipping: Number(p.shipping) || 0
+    };
+  }
+
   saveCart() {
-    localStorage.setItem("gd_cart", JSON.stringify(this.cart));
+    try {
+      const sanitizedCart = this.cart.map(item => ({
+        product: this.sanitizeCartProduct(item.product),
+        quantity: item.quantity
+      }));
+      localStorage.setItem("gd_cart", JSON.stringify(sanitizedCart));
+    } catch (e) {
+      console.warn("localStorage quota exceeded while saving gd_cart:", e);
+    }
     this.updateBadges();
     this.renderCartDrawerItems();
   }
 
   saveWishlist() {
-    localStorage.setItem("gd_wishlist", JSON.stringify(this.wishlist));
+    try {
+      localStorage.setItem("gd_wishlist", JSON.stringify(this.wishlist));
+    } catch (e) {
+      console.warn("localStorage quota exceeded while saving gd_wishlist:", e);
+    }
     this.updateBadges();
   }
 
@@ -341,7 +376,7 @@ class ECommerceApp {
         if (existingItem) {
           existingItem.quantity = availableStock;
         } else {
-          this.cart.push({ product, quantity: availableStock });
+          this.cart.push({ product: this.sanitizeCartProduct(product), quantity: availableStock });
         }
         this.saveCart();
         window.GalaxyUtils.showToast(`⚠️ Only ${availableStock} unit(s) available in stock for "${product.name}". Added ${allowedToAdd} unit(s) up to stock limit.`, "warning");
@@ -352,7 +387,7 @@ class ECommerceApp {
     if (existingItem) {
       existingItem.quantity = targetQty;
     } else {
-      this.cart.push({ product, quantity: targetQty });
+      this.cart.push({ product: this.sanitizeCartProduct(product), quantity: targetQty });
     }
 
     this.saveCart();
@@ -2857,7 +2892,16 @@ class ECommerceApp {
           }
         });
         if (prodsChanged) {
-          localStorage.setItem("gd_products", JSON.stringify(this.products));
+          try {
+            const cachedProducts = this.products.map(p => {
+              if (!p) return p;
+              const { gallery, desc, specs, ...rest } = p;
+              return rest;
+            });
+            localStorage.setItem("gd_products", JSON.stringify(cachedProducts));
+          } catch (e) {
+            console.warn("localStorage quota exceeded while saving gd_products:", e);
+          }
         }
       }
 

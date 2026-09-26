@@ -44,10 +44,27 @@ window.GalaxyAPI = {
       const solutions = await solutionsRes.json();
 
       // Synchronize live DB objects to LocalStorage cache so state stays in sync
-      if (Array.isArray(products)) localStorage.setItem("gd_products", JSON.stringify(products));
-      if (Array.isArray(categories)) localStorage.setItem("gd_categories", JSON.stringify(categories));
-      if (Array.isArray(reviews)) localStorage.setItem("gd_reviews", JSON.stringify(reviews));
-      if (store && typeof store === 'object' && !store.error) localStorage.setItem("gd_store", JSON.stringify(store));
+      if (Array.isArray(products)) {
+        try {
+          const cachedProducts = products.map(p => {
+            if (!p) return p;
+            const { gallery, desc, specs, ...rest } = p;
+            return rest;
+          });
+          localStorage.setItem("gd_products", JSON.stringify(cachedProducts));
+        } catch (e) {
+          console.warn("localStorage quota exceeded while caching gd_products:", e);
+        }
+      }
+      if (Array.isArray(categories)) {
+        try { localStorage.setItem("gd_categories", JSON.stringify(categories)); } catch (e) {}
+      }
+      if (Array.isArray(reviews)) {
+        try { localStorage.setItem("gd_reviews", JSON.stringify(reviews)); } catch (e) {}
+      }
+      if (store && typeof store === 'object' && !store.error) {
+        try { localStorage.setItem("gd_store", JSON.stringify(store)); } catch (e) {}
+      }
 
       // Synchronize in-memory app state and re-render current view with live DB data
       if (window.GalaxyAppInstance) {
