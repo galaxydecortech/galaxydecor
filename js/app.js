@@ -282,11 +282,11 @@ class ECommerceApp {
   // --- State Updates & Badges ---
   updateBadges() {
     let totalQty = this.cart.reduce((sum, item) => sum + item.quantity, 0);
-    this.cartBadge.textContent = totalQty;
+    if (this.cartBadge) this.cartBadge.textContent = totalQty;
     if (this.mobileCartCount) this.mobileCartCount.textContent = totalQty;
 
     let wishlistCount = this.wishlist.length;
-    this.wishlistBadge.textContent = wishlistCount;
+    if (this.wishlistBadge) this.wishlistBadge.textContent = wishlistCount;
     if (this.mobileWishlistCount) this.mobileWishlistCount.textContent = wishlistCount;
 
     // Update Drawer if open
@@ -1539,9 +1539,9 @@ class ECommerceApp {
   }
 
   // --- 4. Render PRODUCTS CATALOG ---
-  renderProducts(queryParams) {
-    let rawCategory = queryParams.category || "";
-    let searchQuery = queryParams.search || "";
+  renderProducts(queryParams = {}) {
+    let rawCategory = (queryParams && queryParams.category) || "";
+    let searchQuery = (queryParams && queryParams.search) || "";
 
     // Infer category from searchQuery if rawCategory is missing
     if (!rawCategory && searchQuery) {

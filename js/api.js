@@ -63,8 +63,8 @@ window.GalaxyAPI = {
         if (store && typeof store === 'object' && !store.error) window.GalaxyAppInstance.updateStoreConfig();
 
         // Re-render catalog grid smoothly without resetting scroll position or re-triggering full router navigation
-        if (typeof window.GalaxyAppInstance.renderCatalogPage === 'function' && window.location.pathname.includes('/products')) {
-          window.GalaxyAppInstance.renderCatalogPage();
+        if (typeof window.GalaxyAppInstance.renderProducts === 'function' && window.location.pathname.includes('/products')) {
+          window.GalaxyAppInstance.renderProducts();
         }
       }
 
