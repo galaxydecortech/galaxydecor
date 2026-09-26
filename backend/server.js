@@ -66,30 +66,138 @@ app.get('/api/ping', (req, res) => res.status(200).send('pong from vercel expres
 // ----------------------------------------------------
 // Admin Authentication & Authorization Middleware
 // ----------------------------------------------------
-const ADMIN_USER = process.env.ADMIN_USERNAME ? String(process.env.ADMIN_USERNAME).trim() : null;
-const ADMIN_PASS = process.env.ADMIN_PASSWORD ? String(process.env.ADMIN_PASSWORD).trim() : null;
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN ? String(process.env.ADMIN_TOKEN).trim() : null;
+const ADMIN_USER_ENV = process.env.ADMIN_USERNAME ? String(process.env.ADMIN_USERNAME).trim() : 'admin';
+const ADMIN_PASS_ENV = process.env.ADMIN_PASSWORD ? String(process.env.ADMIN_PASSWORD).trim() : 'admin123';
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN ? String(process.env.ADMIN_TOKEN).trim() : 'gd_admin_secret_token_2026';
 
-if (!ADMIN_USER || !ADMIN_PASS || !ADMIN_TOKEN) {
-  console.warn('WARNING: Admin credentials not fully configured in .env — admin routes are disabled.');
+let activeAdminUser = ADMIN_USER_ENV;
+let activeAdminPass = ADMIN_PASS_ENV;
+let activeAdminHash = null;
+let activeAdminSalt = null;
+
+function hashPassword(password, salt) {
+  if (!salt) salt = crypto.randomBytes(16).toString('hex');
+  const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+  return { salt, hash };
 }
 
-app.post('/api/admin/login', (req, res) => {
-  if (!ADMIN_USER || !ADMIN_PASS || !ADMIN_TOKEN) {
-    return res.status(503).json({ error: 'Admin authentication is not configured on the server.' });
+function verifyPassword(password, salt, hash) {
+  if (!salt || !hash) return false;
+  try {
+    const newHash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex');
+    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(newHash, 'hex'));
+  } catch (e) {
+    return false;
   }
+}
+
+async function loadAdminCredentialsFromDB() {
+  try {
+    const { data, error } = await supabase.from('store_config').select('*');
+    if (!error && Array.isArray(data)) {
+      const dbConfig = {};
+      data.forEach(row => { dbConfig[row.key] = row.value; });
+      if (dbConfig.admin_username) {
+        activeAdminUser = String(dbConfig.admin_username).trim();
+      }
+      if (dbConfig.admin_password_hash && dbConfig.admin_password_salt) {
+        activeAdminHash = String(dbConfig.admin_password_hash).trim();
+        activeAdminSalt = String(dbConfig.admin_password_salt).trim();
+      }
+    }
+  } catch (err) {
+    // Fallback to env / default
+  }
+}
+loadAdminCredentialsFromDB();
+
+app.post('/api/admin/login', async (req, res) => {
   const { username, password } = req.body || {};
   const cleanUser = String(username || '').trim().toLowerCase();
   const cleanPass = String(password || '').trim();
 
-  if (cleanUser === ADMIN_USER.toLowerCase() && cleanPass === ADMIN_PASS) {
+  await loadAdminCredentialsFromDB();
+
+  let isMatch = false;
+  if (activeAdminHash && activeAdminSalt) {
+    isMatch = (cleanUser === activeAdminUser.toLowerCase()) && verifyPassword(cleanPass, activeAdminSalt, activeAdminHash);
+  } else {
+    isMatch = (cleanUser === activeAdminUser.toLowerCase()) && (cleanPass === activeAdminPass);
+  }
+
+  if (isMatch) {
     return res.json({
       success: true,
       token: ADMIN_TOKEN,
-      message: 'Admin authenticated successfully'
+      message: 'Admin authenticated successfully',
+      username: activeAdminUser
     });
   }
   return res.status(401).json({ error: 'Invalid admin username or password.' });
+});
+
+app.post('/api/admin/change-credentials', requireAdminAuth, async (req, res) => {
+  try {
+    const { newUsername, newPassword } = req.body || {};
+    const cleanNewUser = String(newUsername || '').trim();
+    const cleanNewPass = String(newPassword || '').trim();
+
+    if (!cleanNewUser) {
+      return res.status(400).json({ error: 'New username cannot be empty.' });
+    }
+    if (!cleanNewPass) {
+      return res.status(400).json({ error: 'New password cannot be empty.' });
+    }
+    if (cleanNewPass.length < 4) {
+      return res.status(400).json({ error: 'New password must be at least 4 characters long.' });
+    }
+
+    const { salt, hash } = hashPassword(cleanNewPass);
+
+    const rowsToUpsert = [
+      { key: 'admin_username', value: cleanNewUser },
+      { key: 'admin_password_hash', value: hash },
+      { key: 'admin_password_salt', value: salt }
+    ];
+
+    const { error } = await supabase.from('store_config').upsert(rowsToUpsert);
+    if (error) {
+      console.warn('Store config upsert warning for admin credentials:', error.message);
+    }
+
+    activeAdminUser = cleanNewUser;
+    activeAdminHash = hash;
+    activeAdminSalt = salt;
+    activeAdminPass = cleanNewPass;
+
+    try {
+      const envPath = path.join(__dirname, '.env');
+      if (fs.existsSync(envPath)) {
+        let envContent = fs.readFileSync(envPath, 'utf8');
+        if (envContent.includes('ADMIN_USERNAME=')) {
+          envContent = envContent.replace(/ADMIN_USERNAME=.*/g, `ADMIN_USERNAME="${cleanNewUser}"`);
+        } else {
+          envContent += `\nADMIN_USERNAME="${cleanNewUser}"`;
+        }
+        if (envContent.includes('ADMIN_PASSWORD=')) {
+          envContent = envContent.replace(/ADMIN_PASSWORD=.*/g, `ADMIN_PASSWORD="${cleanNewPass}"`);
+        } else {
+          envContent += `\nADMIN_PASSWORD="${cleanNewPass}"`;
+        }
+        fs.writeFileSync(envPath, envContent, 'utf8');
+      }
+    } catch (e) {
+      // Non-blocking for serverless environment
+    }
+
+    return res.json({
+      success: true,
+      message: 'Admin credentials updated successfully.',
+      username: cleanNewUser
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 function requireAdminAuth(req, res, next) {
@@ -109,7 +217,11 @@ app.get('/api/store', async (req, res) => {
     const { data, error } = await supabase.from('store_config').select('*');
     if (error) throw error;
     const store = {};
-    (data || []).forEach(row => { store[row.key] = row.value; });
+    (data || []).forEach(row => {
+      if (!row.key.startsWith('admin_')) {
+        store[row.key] = row.value;
+      }
+    });
     res.json(store);
   } catch (err) {
     res.status(500).json({ error: err.message });

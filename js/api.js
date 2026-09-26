@@ -220,6 +220,31 @@ window.GalaxyAPI = {
       console.warn(`Failed to delete ${id} from ${endpoint}:`, error);
       return null;
     }
+  },
+
+  async updateAdminCredentials(newUsername, newPassword) {
+    try {
+      const token = sessionStorage.getItem('gd_admin_token') || '';
+      const response = await fetch(`${API_BASE}/admin/change-credentials`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Auth': token
+        },
+        body: JSON.stringify({ newUsername, newPassword })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update admin credentials');
+      }
+      if (data.username) {
+        sessionStorage.setItem('gd_admin_username', data.username);
+      }
+      return { success: true, message: data.message || 'Admin credentials updated successfully' };
+    } catch (error) {
+      console.warn("Failed to update admin credentials:", error.message);
+      return { success: false, error: error.message };
+    }
   }
 
 };

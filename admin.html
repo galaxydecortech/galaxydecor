@@ -1657,6 +1657,36 @@
               </form>
             </div>
 
+            <!-- Admin Account Credentials Panel -->
+            <div class="panel" style="margin-top: 1.5rem;">
+              <div class="panel-title">
+                <span>Admin Account Credentials</span>
+              </div>
+              <p style="font-size:0.85rem; color:#777; margin-bottom:1.2rem; line-height:1.4;">
+                Update the Super Administrator username and password for dashboard access.
+              </p>
+              <form id="settings-admin-credentials-form" autocomplete="off">
+                <div id="admin-cred-alert" style="display:none; padding:10px 14px; border-radius:6px; font-size:0.85rem; margin-bottom:1rem;"></div>
+
+                <div class="form-group">
+                  <label for="set-admin-username">Admin Username</label>
+                  <input type="text" id="set-admin-username" class="form-control" placeholder="Admin Username" required autocomplete="off">
+                </div>
+
+                <div class="form-group">
+                  <label for="set-admin-new-pass">New Password</label>
+                  <input type="password" id="set-admin-new-pass" class="form-control" placeholder="New Password" required autocomplete="new-password">
+                </div>
+
+                <div class="form-group">
+                  <label for="set-admin-confirm-pass">Confirm New Password</label>
+                  <input type="password" id="set-admin-confirm-pass" class="form-control" placeholder="Confirm New Password" required autocomplete="new-password">
+                </div>
+
+                <button type="submit" id="btn-update-admin-cred" class="btn btn-gold btn-sm">UPDATE ADMIN CREDENTIALS</button>
+              </form>
+            </div>
+
             <!-- Categories and Active Coupons Panel -->
             <div>
               <!-- Active Promo Coupons -->
@@ -2117,6 +2147,7 @@
             if (result.token) {
               sessionStorage.setItem("gd_admin_token", result.token);
             }
+            sessionStorage.setItem("gd_admin_username", user);
             loginSuccessful = true;
           }
         } catch (err) {
@@ -3556,8 +3587,78 @@
 
       tbodyCategoriesEvents(catTbody);
 
+      // 4. Admin Username prefill
+      const adminUserField = document.getElementById("set-admin-username");
+      if (adminUserField && !adminUserField.value) {
+        adminUserField.value = sessionStorage.getItem("gd_admin_username") || "admin";
+      }
+
       lucide.createIcons();
     }
+
+    // Admin Credentials Change Submit
+    document.getElementById("settings-admin-credentials-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const alertEl = document.getElementById("admin-cred-alert");
+      const userEl = document.getElementById("set-admin-username");
+      const newPassEl = document.getElementById("set-admin-new-pass");
+      const confirmPassEl = document.getElementById("set-admin-confirm-pass");
+      const submitBtn = document.getElementById("btn-update-admin-cred");
+
+      const newUsername = userEl.value.trim();
+      const newPassword = newPassEl.value.trim();
+      const confirmPassword = confirmPassEl.value.trim();
+
+      function showAlert(msg, type) {
+        if (alertEl) {
+          alertEl.style.display = "block";
+          alertEl.style.background = type === "success" ? "#e6f4ea" : "#fce8e6";
+          alertEl.style.color = type === "success" ? "#137333" : "#c5221f";
+          alertEl.style.border = type === "success" ? "1px solid #ceead6" : "1px solid #fad2cf";
+          alertEl.textContent = msg;
+        }
+      }
+
+      if (!newUsername) {
+        showAlert("Admin username cannot be empty.", "error");
+        return;
+      }
+      if (!newPassword) {
+        showAlert("New password cannot be empty.", "error");
+        return;
+      }
+      if (newPassword.length < 4) {
+        showAlert("New password must be at least 4 characters long.", "error");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showAlert("Confirm password does not match the new password.", "error");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Updating...";
+
+      if (window.GalaxyAPI && typeof window.GalaxyAPI.updateAdminCredentials === 'function') {
+        const res = await window.GalaxyAPI.updateAdminCredentials(newUsername, newPassword);
+        submitBtn.disabled = false;
+        submitBtn.textContent = "UPDATE ADMIN CREDENTIALS";
+
+        if (res && res.success) {
+          showAlert("Admin credentials updated successfully! Use your new credentials for future logins.", "success");
+          newPassEl.value = "";
+          confirmPassEl.value = "";
+          if (res.username) sessionStorage.setItem("gd_admin_username", res.username);
+          window.GalaxyUtils.showToast("Admin credentials updated successfully.");
+        } else {
+          showAlert(res.error || "Failed to update credentials. Please try again.", "error");
+        }
+      } else {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "UPDATE ADMIN CREDENTIALS";
+        showAlert("API integration unavailable.", "error");
+      }
+    });
 
     // Store Config Submit
     document.getElementById("settings-store-form").addEventListener("submit", async (e) => {
