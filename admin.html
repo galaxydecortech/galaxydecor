@@ -1278,7 +1278,7 @@
           <p>Super Administrator</p>
           <span>Showroom Sourcing active</span>
         </div>
-        <button id="btn-logout" class="btn btn-outline btn-sm" style="border-color:#444; color:#fff;"><i
+        <button id="btn-logout" type="button" onclick="window.handleAdminLogout(event)" class="btn btn-outline btn-sm" style="border-color:#444; color:#fff;"><i
             data-lucide="log-out"
             style="width:12px;height:12px;margin-right:5px;vertical-align:middle;"></i>Logout</button>
       </div>
@@ -1675,12 +1675,26 @@
 
                 <div class="form-group">
                   <label for="set-admin-new-pass">New Password</label>
-                  <input type="password" id="set-admin-new-pass" class="form-control" placeholder="New Password" required autocomplete="new-password">
+                  <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="set-admin-new-pass" class="form-control" placeholder="New Password" required autocomplete="new-password" style="padding-right: 42px; width: 100%;">
+                    <button type="button" class="toggle-pass-btn" onclick="window.togglePasswordVisibility('set-admin-new-pass', this)"
+                      style="position: absolute; right: 12px; background: none; border: none; color: var(--color-secondary-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;"
+                      title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
+                      <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="form-group">
                   <label for="set-admin-confirm-pass">Confirm New Password</label>
-                  <input type="password" id="set-admin-confirm-pass" class="form-control" placeholder="Confirm New Password" required autocomplete="new-password">
+                  <div style="position: relative; display: flex; align-items: center;">
+                    <input type="password" id="set-admin-confirm-pass" class="form-control" placeholder="Confirm New Password" required autocomplete="new-password" style="padding-right: 42px; width: 100%;">
+                    <button type="button" class="toggle-pass-btn" onclick="window.togglePasswordVisibility('set-admin-confirm-pass', this)"
+                      style="position: absolute; right: 12px; background: none; border: none; color: var(--color-secondary-muted); cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px;"
+                      title="Toggle Password Visibility" aria-label="Toggle Password Visibility">
+                      <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                    </button>
+                  </div>
                 </div>
 
                 <button type="submit" id="btn-update-admin-cred" class="btn btn-gold btn-sm">UPDATE ADMIN CREDENTIALS</button>
@@ -2038,10 +2052,11 @@
   <script src="/js/api.js?v=20260925_v700"></script>
   <script>
     // Password Visibility Toggle Function
-    window.togglePasswordVisibility = function () {
-      const pwdInput = document.getElementById("password");
-      const icon = document.getElementById("toggle-password-icon");
+    window.togglePasswordVisibility = function (inputId, btnEl) {
+      const targetId = typeof inputId === 'string' ? inputId : "password";
+      const pwdInput = document.getElementById(targetId);
       if (!pwdInput) return;
+      const icon = (btnEl ? btnEl.querySelector("i, svg") : null) || document.getElementById("toggle-password-icon");
       if (pwdInput.type === "password") {
         pwdInput.type = "text";
         if (icon) icon.setAttribute("data-lucide", "eye-off");
@@ -2180,21 +2195,37 @@
       return false;
     };
 
-    // Logout Action
+    // Logout Action (Global fail-safe handler)
+    window.handleAdminLogout = function (e) {
+      if (e && e.preventDefault) e.preventDefault();
+      console.log("👉 [ADMIN LOGOUT] Logging out admin user...");
+      sessionStorage.removeItem("gd_admin_logged_in");
+      sessionStorage.removeItem("gd_admin_token");
+      sessionStorage.removeItem("gd_admin_username");
+      sessionStorage.removeItem("gd_admin_active_tab");
+
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(null, "", window.location.pathname);
+      } else {
+        window.location.hash = "";
+      }
+
+      const appScreenEl = document.getElementById("admin-dashboard-app");
+      const loginScreenEl = document.getElementById("login-screen");
+      if (appScreenEl) appScreenEl.style.display = "none";
+      if (loginScreenEl) loginScreenEl.style.display = "flex";
+
+      const lForm = document.getElementById("admin-login-form");
+      if (lForm) lForm.reset();
+
+      const errorEl = document.getElementById("login-error-alert");
+      if (errorEl) errorEl.style.display = "none";
+    };
+
     document.addEventListener("DOMContentLoaded", () => {
       const logoutBtn = document.getElementById("btn-logout");
       if (logoutBtn) {
-        logoutBtn.addEventListener("click", () => {
-          console.log("👉 [ADMIN LOGOUT] Logging out admin user...");
-          sessionStorage.removeItem("gd_admin_logged_in");
-          sessionStorage.removeItem("gd_admin_token");
-          const appScreenEl = document.getElementById("admin-dashboard-app");
-          const loginScreenEl = document.getElementById("login-screen");
-          if (appScreenEl) appScreenEl.style.display = "none";
-          if (loginScreenEl) loginScreenEl.style.display = "flex";
-          const lForm = document.getElementById("admin-login-form");
-          if (lForm) lForm.reset();
-        });
+        logoutBtn.addEventListener("click", window.handleAdminLogout);
       }
     });
 
