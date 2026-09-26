@@ -2235,7 +2235,10 @@
         ]).then(([fetchResult, adminResult]) => {
           if (fetchResult && fetchResult.success) {
             if (Array.isArray(fetchResult.products)) products = fetchResult.products;
-            if (Array.isArray(fetchResult.categories)) categories = fetchResult.categories;
+            if (Array.isArray(fetchResult.categories)) {
+              categories = fetchResult.categories;
+              saveCategories();
+            }
             if (fetchResult.store && typeof fetchResult.store === 'object' && !fetchResult.store.error) store = fetchResult.store;
             if (Array.isArray(fetchResult.reviews)) reviews = fetchResult.reviews;
           }
@@ -2971,6 +2974,11 @@
 
     closeCatModal.addEventListener("click", () => {
       catModal.classList.remove("active");
+      categoryForm.reset();
+      document.getElementById("form-category-index").value = "";
+      document.getElementById("form-cid").value = "";
+      document.getElementById("form-cid").readOnly = false;
+      clearCategoryFormImage();
     });
 
     // Helper to resolve fallback cover images in admin
@@ -3191,7 +3199,7 @@
     });
 
     // Category Form Submit Listener
-    categoryForm.addEventListener("submit", (e) => {
+    categoryForm.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const idx = document.getElementById("form-category-index").value;
@@ -3216,7 +3224,7 @@
       }
 
       if (!cImage) {
-        if (!isNew && categories[idx].image) {
+        if (!isNew && categories[idx] && categories[idx].image) {
           cImage = categories[idx].image;
         } else {
           cImage = "placeholder_" + cId; // fallback placeholder
@@ -3230,6 +3238,8 @@
         image: cImage
       };
 
+      const previousCatState = isNew ? null : { ...categories[idx] };
+
       if (isNew) {
         categories.push(catObj);
       } else {
@@ -3239,11 +3249,36 @@
       saveCategories();
 
       // Sync category to Supabase Cloud Backend
+      let syncFailed = false;
+      let syncErrorMsg = "";
       if (window.GalaxyAPI) {
-        window.GalaxyAPI.syncEntity('categories', 'POST', catObj);
+        const syncRes = await window.GalaxyAPI.syncEntity('categories', 'POST', catObj);
+        if (syncRes && syncRes.error) {
+          syncFailed = true;
+          syncErrorMsg = syncRes.error;
+        }
+      }
+
+      if (syncFailed) {
+        // Rollback optimistic insertion if backend sync fails
+        if (isNew) {
+          const addedIdx = categories.findIndex(c => c.id === cId);
+          if (addedIdx !== -1) categories.splice(addedIdx, 1);
+        } else {
+          categories[idx] = previousCatState;
+        }
+        saveCategories();
+        alert(`Failed to save category to backend database: ${syncErrorMsg}`);
+        return;
       }
 
       catModal.classList.remove("active");
+      categoryForm.reset();
+      document.getElementById("form-category-index").value = "";
+      document.getElementById("form-cid").value = "";
+      document.getElementById("form-cid").readOnly = false;
+      clearCategoryFormImage();
+
       renderCategoriesTab();
       window.GalaxyUtils.showToast("Categories list updated successfully.");
     });
