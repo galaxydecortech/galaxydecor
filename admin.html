@@ -2066,14 +2066,14 @@
     if (!localStorage.getItem("gd_enquiries")) localStorage.setItem("gd_enquiries", JSON.stringify([]));
     if (!localStorage.getItem("gd_reviews")) localStorage.setItem("gd_reviews", JSON.stringify(window.GALAXY_DECOR_DB.reviews));
 
-    // State Variables
-    let products = JSON.parse(localStorage.getItem("gd_products"));
-    let categories = JSON.parse(localStorage.getItem("gd_categories"));
-    let store = JSON.parse(localStorage.getItem("gd_store"));
-    let coupons = JSON.parse(localStorage.getItem("gd_coupons"));
-    let orders = JSON.parse(localStorage.getItem("gd_orders"));
-    let enquiries = JSON.parse(localStorage.getItem("gd_enquiries"));
-    let reviews = JSON.parse(localStorage.getItem("gd_reviews"));
+    // State Variables (Pre-render state before background API fetch completes)
+    let products = JSON.parse(localStorage.getItem("gd_products") || "null") || window.GALAXY_DECOR_DB.products;
+    let categories = JSON.parse(localStorage.getItem("gd_categories") || "null") || window.GALAXY_DECOR_DB.categories;
+    let store = JSON.parse(localStorage.getItem("gd_store") || "null") || window.GALAXY_DECOR_DB.store;
+    let coupons = JSON.parse(localStorage.getItem("gd_coupons") || "null") || defaultCoupons;
+    let orders = JSON.parse(localStorage.getItem("gd_orders") || "[]");
+    let enquiries = JSON.parse(localStorage.getItem("gd_enquiries") || "[]");
+    let reviews = JSON.parse(localStorage.getItem("gd_reviews") || "null") || window.GALAXY_DECOR_DB.reviews;
 
     // --- Copy Credential Helper ---
     window.copyCredential = function (elementId, btn) {
@@ -2229,26 +2229,7 @@
         const logoutBtn = document.getElementById("btn-logout");
         if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="loader" class="spin"></i> Syncing...`;
 
-        Promise.all([
-          window.GalaxyAPI.fetchAllData(),
-          window.GalaxyAPI.fetchAdminData()
-        ]).then(([fetchResult, adminResult]) => {
-          if (fetchResult && fetchResult.success) {
-            if (Array.isArray(fetchResult.products)) products = fetchResult.products;
-            if (Array.isArray(fetchResult.categories)) {
-              categories = fetchResult.categories;
-              saveCategories();
-            }
-            if (fetchResult.store && typeof fetchResult.store === 'object' && !fetchResult.store.error) store = fetchResult.store;
-            if (Array.isArray(fetchResult.reviews)) reviews = fetchResult.reviews;
-          }
-          if (adminResult && adminResult.success) {
-            if (Array.isArray(adminResult.orders)) orders = adminResult.orders;
-            if (Array.isArray(adminResult.enquiries)) enquiries = adminResult.enquiries;
-            if (Array.isArray(adminResult.coupons)) coupons = adminResult.coupons;
-          }
-
-          // Re-render live stats & active tab smoothly
+        const refreshActiveTabUI = () => {
           loadAllStats();
           const activeTab = sessionStorage.getItem("gd_admin_active_tab") || (window.location.hash ? window.location.hash.replace("#", "") : "overview");
           if (activeTab === "overview") renderOverviewTab();
@@ -2260,14 +2241,49 @@
           else if (activeTab === "settings") renderSettingsTab();
 
           populateFormDropdowns();
-          if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="log-out"></i> Logout`;
           if (window.lucide) lucide.createIcons();
-          console.log("✅ [SHOW DASHBOARD] Live background data sync complete!");
-        }).catch(err => {
-          console.warn("⚠️ [SHOW DASHBOARD] Background sync warning:", err);
-          if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="log-out"></i> Logout`;
-          if (window.lucide) lucide.createIcons();
-        });
+        };
+
+        // DECOUPLED Public Catalog Data Fetch (Categories, Products, Store, Reviews)
+        // Must succeed and update categories/products even if admin-protected endpoints return 401
+        window.GalaxyAPI.fetchAllData()
+          .then(fetchResult => {
+            if (fetchResult && fetchResult.success) {
+              if (Array.isArray(fetchResult.products)) products = fetchResult.products;
+              if (Array.isArray(fetchResult.categories)) {
+                categories = fetchResult.categories;
+                saveCategories();
+              }
+              if (fetchResult.store && typeof fetchResult.store === 'object' && !fetchResult.store.error) store = fetchResult.store;
+              if (Array.isArray(fetchResult.reviews)) reviews = fetchResult.reviews;
+
+              refreshActiveTabUI();
+              console.log("✅ [SHOW DASHBOARD] Public catalog data sync complete!");
+            }
+          })
+          .catch(err => {
+            console.warn("⚠️ [SHOW DASHBOARD] Public catalog sync warning:", err);
+          });
+
+        // DECOUPLED Protected Admin Data Fetch (Orders, Enquiries, Coupons)
+        window.GalaxyAPI.fetchAdminData()
+          .then(adminResult => {
+            if (adminResult && adminResult.success) {
+              if (Array.isArray(adminResult.orders)) orders = adminResult.orders;
+              if (Array.isArray(adminResult.enquiries)) enquiries = adminResult.enquiries;
+              if (Array.isArray(adminResult.coupons)) coupons = adminResult.coupons;
+
+              refreshActiveTabUI();
+              console.log("✅ [SHOW DASHBOARD] Admin protected data sync complete!");
+            }
+          })
+          .catch(err => {
+            console.warn("⚠️ [SHOW DASHBOARD] Admin protected data sync warning:", err);
+          })
+          .finally(() => {
+            if (logoutBtn) logoutBtn.innerHTML = `<i data-lucide="log-out"></i> Logout`;
+            if (window.lucide) lucide.createIcons();
+          });
       }
     };
 
