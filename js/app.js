@@ -92,7 +92,9 @@ class ECommerceApp {
     let catalogData = window.GALAXY_PRODUCTS || window.GALAXY_DECOR_CATALOG || [];
     let parsedProducts = null;
     try { parsedProducts = JSON.parse(localStorage.getItem("gd_products")); } catch (e) { }
-    this.products = (Array.isArray(parsedProducts) && parsedProducts.length > 0) ? parsedProducts : catalogData;
+    const hasCachedApiProducts = Array.isArray(parsedProducts) && parsedProducts.length > 0;
+    this._products = hasCachedApiProducts ? parsedProducts : catalogData;
+    this.productsSyncedFromAPI = hasCachedApiProducts;
 
     // Force upgrade categories using a version flag to clear any old cached/broken category image URLs
     const CAT_VERSION = "v20260827_v50";
@@ -141,6 +143,9 @@ class ECommerceApp {
       }
     };
 
+    // Track whether products array has been synced from backend API
+    this.productsSyncedFromAPI = false;
+
     // Initialize UI handlers
     this.initGlobalEvents();
     this.updateBadges();
@@ -150,6 +155,17 @@ class ECommerceApp {
 
     // Register SPA Routes with GalaxyRouter
     this.registerRoutes();
+  }
+
+  get products() {
+    return this._products || [];
+  }
+
+  set products(val) {
+    this._products = val;
+    if (Array.isArray(val) && val.length > 0) {
+      this.productsSyncedFromAPI = true;
+    }
   }
 
   isOutOfStock(p) {
@@ -178,7 +194,7 @@ class ECommerceApp {
 
     this.cart.forEach(item => {
       if (item && item.product && item.product.id) {
-        const fresh = this.products.find(p => p.id === item.product.id);
+        const fresh = this.products.find(p => String(p.id) === String(item.product.id));
         if (fresh) {
           item.product = { ...fresh };
           
@@ -199,8 +215,14 @@ class ECommerceApp {
 
           updatedCart.push(item);
         } else {
-          // Product no longer exists in current catalog/database -> Auto-remove obsolete item from cart!
-          changed = true;
+          // If live API products have not resolved yet, do NOT auto-remove cart items!
+          // Retain item until live API products arrive from fetchAllData().
+          if (!this.productsSyncedFromAPI) {
+            updatedCart.push(item);
+          } else {
+            // Product no longer exists in current catalog/database -> Auto-remove obsolete item from cart!
+            changed = true;
+          }
         }
       }
     });
@@ -306,7 +328,7 @@ class ECommerceApp {
       return false;
     }
 
-    let existingItem = this.cart.find(item => item.product.id === productId);
+    let existingItem = this.cart.find(item => String(item.product.id) === String(productId));
     let currentInCart = existingItem ? existingItem.quantity : 0;
     let targetQty = currentInCart + quantity;
 
@@ -356,7 +378,7 @@ class ECommerceApp {
     this.cart = this.cart.filter(item => {
       if (!item || !item.product) return false;
       const pid = item.product.id || item.product;
-      return pid !== productId;
+      return String(pid) !== String(productId);
     });
     this.saveCart();
     window.GalaxyUtils.showToast("Item removed from bag.", "info");
@@ -375,10 +397,10 @@ class ECommerceApp {
       }
     } catch (e) {}
 
-    let item = this.cart.find(item => item.product.id === productId);
+    let item = this.cart.find(item => String(item.product.id) === String(productId));
     if (!item) return;
 
-    let product = this.products.find(p => p.id === productId) || item.product;
+    let product = this.products.find(p => String(p.id) === String(productId)) || item.product;
     const availableStock = this.getAvailableStock(product);
     const isOut = this.isOutOfStock(product);
 
@@ -628,7 +650,7 @@ class ECommerceApp {
     // Bind quantity button events in drawer
     listContainer.querySelectorAll(".drawer-item").forEach(itemEl => {
       let id = itemEl.getAttribute("data-id");
-      let item = this.cart.find(c => c.product.id === id);
+      let item = this.cart.find(c => String(c.product.id) === String(id));
 
       itemEl.querySelector(".btn-minus").addEventListener("click", () => {
         this.updateCartQuantity(id, item.quantity - 1);
@@ -2262,7 +2284,7 @@ class ECommerceApp {
     let stockWarningMessages = [];
 
     this.cart.forEach(item => {
-      const fresh = this.products.find(p => p.id === item.product.id);
+      const fresh = this.products.find(p => String(p.id) === String(item.product.id));
       const prod = fresh || item.product;
       const availableStock = this.getAvailableStock(prod);
       const isOut = this.isOutOfStock(prod);
@@ -2435,7 +2457,7 @@ class ECommerceApp {
             
             <div class="checkout-items-list">
               ${this.cart.map(item => {
-                const fresh = this.products.find(p => p.id === item.product.id);
+                const fresh = this.products.find(p => String(p.id) === String(item.product.id));
                 const prod = fresh || item.product;
                 const availableStock = this.getAvailableStock(prod);
                 const isOut = this.isOutOfStock(prod);
@@ -2569,7 +2591,7 @@ class ECommerceApp {
 
         // 3. Strict Pre-Submission & Pre-Payment Stock Audit Loop
         for (let item of this.cart) {
-          const fresh = this.products.find(p => p.id === item.product.id);
+          const fresh = this.products.find(p => String(p.id) === String(item.product.id));
           const prod = fresh || item.product;
           const availableStock = this.getAvailableStock(prod);
           const isOut = this.isOutOfStock(prod);
