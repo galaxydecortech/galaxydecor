@@ -17,7 +17,30 @@
       if (sessionStorage.getItem("gd_admin_logged_in") === "true") {
         document.write('<style id="pre-render-auth-style">#login-screen{display:none !important;}#admin-dashboard-app{display:block !important;}</style>');
       }
-      var savedTab = (window.location.hash ? window.location.hash.replace("#", "") : null) || sessionStorage.getItem("gd_admin_active_tab");
+      var pathname = window.location.pathname;
+      var hash = window.location.hash ? window.location.hash.replace("#", "").trim() : "";
+
+      // Legacy URL backward-compatibility redirect:
+      // Convert /admin.html or /admin.html#section or /admin#section to /admin/section or /admin
+      if (pathname.includes("admin.html")) {
+        var legacyTab = hash || "overview";
+        var redirectUrl = (legacyTab === "overview") ? "/admin" : "/admin/" + legacyTab;
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, "", redirectUrl);
+        }
+        pathname = redirectUrl;
+        hash = "";
+      } else if (hash) {
+        var cleanUrl = (hash === "overview") ? "/admin" : "/admin/" + hash;
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, "", cleanUrl);
+        }
+        pathname = cleanUrl;
+      }
+
+      var match = pathname.match(/^\/admin(?:\/([^\/]+))?$/i);
+      var currentTab = (match && match[1]) ? match[1].toLowerCase() : null;
+      var savedTab = currentTab || sessionStorage.getItem("gd_admin_active_tab");
       if (savedTab && savedTab !== "overview") {
         document.write('<style id="pre-render-tab-style">.menu-item[data-tab="overview"]{background:transparent;color:inherit;}.menu-item[data-tab="' + savedTab + '"]{background:rgba(201,162,39,0.12);color:var(--color-accent,#C9A227);}#tab-overview{display:none;}#tab-' + savedTab + '{display:block;}</style>');
       }
@@ -2195,6 +2218,20 @@
       return false;
     };
 
+    // Helper to parse active admin section from URL path
+    window.getAdminSectionFromPath = function () {
+      const pathname = window.location.pathname;
+      const hash = window.location.hash ? window.location.hash.replace("#", "").trim() : "";
+      if (pathname.includes("admin.html")) {
+        return hash || "overview";
+      }
+      const match = pathname.match(/^\/admin(?:\/([^\/]+))?$/i);
+      if (match && match[1]) {
+        return match[1].toLowerCase();
+      }
+      return "overview";
+    };
+
     // Logout Action (Global fail-safe handler)
     window.handleAdminLogout = function (e) {
       if (e && e.preventDefault) e.preventDefault();
@@ -2205,9 +2242,7 @@
       sessionStorage.removeItem("gd_admin_active_tab");
 
       if (window.history && window.history.replaceState) {
-        window.history.replaceState(null, "", window.location.pathname);
-      } else {
-        window.location.hash = "";
+        window.history.replaceState(null, "", "/admin");
       }
 
       const appScreenEl = document.getElementById("admin-dashboard-app");
@@ -2231,6 +2266,13 @@
 
     window.showDashboard = function () {
       console.log("👉 [SHOW DASHBOARD] Executing showDashboard()...");
+      if (sessionStorage.getItem("gd_admin_logged_in") !== "true") {
+        const appScreenEl = document.getElementById("admin-dashboard-app");
+        const loginScreenEl = document.getElementById("login-screen");
+        if (appScreenEl) appScreenEl.style.display = "none";
+        if (loginScreenEl) loginScreenEl.style.display = "flex";
+        return;
+      }
       const loginScreenEl = document.getElementById("login-screen");
       const appScreenEl = document.getElementById("admin-dashboard-app");
 
@@ -2262,7 +2304,7 @@
 
         const refreshActiveTabUI = () => {
           loadAllStats();
-          const activeTab = sessionStorage.getItem("gd_admin_active_tab") || (window.location.hash ? window.location.hash.replace("#", "") : "overview");
+          const activeTab = sessionStorage.getItem("gd_admin_active_tab") || window.getAdminSectionFromPath();
           if (activeTab === "overview") renderOverviewTab();
           else if (activeTab === "categories") renderCategoriesTab();
           else if (activeTab === "products") renderProductsTab();
@@ -2318,25 +2360,24 @@
       }
     };
 
-    // 3. Tab Navigation Manager with Hash and SessionStorage persistence
+    // 3. Clean Path-based Tab Navigation Manager
     function initTabNavigation() {
       const menuItems = document.querySelectorAll(".menu-item");
       const tabSections = document.querySelectorAll(".tab-section");
 
-      const getActiveTabFromUrlOrStorage = () => {
-        const hash = window.location.hash.replace("#", "").trim();
-        const storedTab = sessionStorage.getItem("gd_admin_active_tab");
-        return hash || storedTab || "overview";
-      };
-
-      const activateTab = (targetTab) => {
+      const activateTab = (targetTab, push = true) => {
         const preStyle = document.getElementById("pre-render-tab-style");
         if (preStyle) preStyle.remove();
 
         const menuItem = document.querySelector(`.menu-item[data-tab="${targetTab}"]`);
         const tabSec = document.getElementById("tab-" + targetTab);
 
-        if (!menuItem || !tabSec) return false;
+        if (!menuItem || !tabSec) {
+          if (targetTab !== "overview") {
+            return activateTab("overview", push);
+          }
+          return false;
+        }
 
         menuItems.forEach(mi => mi.classList.remove("active"));
         menuItem.classList.add("active");
@@ -2345,8 +2386,21 @@
         tabSec.classList.add("active");
 
         sessionStorage.setItem("gd_admin_active_tab", targetTab);
-        if (window.location.hash !== "#" + targetTab) {
-          history.replaceState(null, "", "#" + targetTab);
+
+        // Compute clean URL path
+        const currentPath = window.location.pathname;
+        const targetPath = (targetTab === "overview" && (currentPath === "/admin" || currentPath === "/admin/")) ? "/admin" : "/admin/" + targetTab;
+
+        if (window.history) {
+          if (push) {
+            if (currentPath !== targetPath || window.location.hash) {
+              history.pushState({ tab: targetTab }, "", targetPath);
+            }
+          } else {
+            if (currentPath !== targetPath || window.location.hash) {
+              history.replaceState({ tab: targetTab }, "", targetPath);
+            }
+          }
         }
 
         // Trigger tab render
@@ -2365,7 +2419,7 @@
       menuItems.forEach(item => {
         item.addEventListener("click", () => {
           const tab = item.getAttribute("data-tab");
-          activateTab(tab);
+          activateTab(tab, true);
         });
       });
 
@@ -2373,19 +2427,26 @@
       document.querySelectorAll(".btn-go-tab").forEach(btn => {
         btn.addEventListener("click", () => {
           const targetTab = btn.getAttribute("data-tab");
-          activateTab(targetTab);
+          activateTab(targetTab, true);
         });
       });
 
-      // Hashchange listener for instant URL hash tab navigation
-      window.addEventListener("hashchange", () => {
-        const h = window.location.hash.replace("#", "").trim();
-        if (h) activateTab(h);
+      // Handle browser Back / Forward history navigation
+      window.addEventListener("popstate", () => {
+        if (sessionStorage.getItem("gd_admin_logged_in") !== "true") {
+          const appScreenEl = document.getElementById("admin-dashboard-app");
+          const loginScreenEl = document.getElementById("login-screen");
+          if (appScreenEl) appScreenEl.style.display = "none";
+          if (loginScreenEl) loginScreenEl.style.display = "flex";
+          return;
+        }
+        const section = window.getAdminSectionFromPath();
+        activateTab(section, false);
       });
 
-      // Restore active tab on load/refresh
-      const savedTab = getActiveTabFromUrlOrStorage();
-      activateTab(savedTab);
+      // Restore active tab on initial load / refresh
+      const initialSection = window.getAdminSectionFromPath();
+      activateTab(initialSection, false);
     }
 
     // Save helpers

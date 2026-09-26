@@ -921,6 +921,9 @@ app.use(express.static(path.join(__dirname, '..')));
 
 app.use((req, res, next) => {
   if (req.method === 'GET') {
+    if (req.path && (req.path === '/admin' || req.path.startsWith('/admin/'))) {
+      return res.sendFile(path.join(__dirname, '..', 'admin.html'));
+    }
     return res.sendFile(path.join(__dirname, '..', 'index.html'));
   }
   next();
