@@ -3,14 +3,14 @@
  * Safely fetches data from the backend and falls back to LocalStorage if offline.
  */
 
-const API_BASE = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) ? 'http://localhost:5000/api' : 'https://galaxydecor.vercel.app/api';
+const API_BASE = (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) ? 'http://localhost:5000/api' : `${window.location.origin}/api`;
 
 // ----------------------------------------------------
 // Cache Version Guard
 // Bump DATA_VERSION whenever products/categories change
 // to force-clear old localStorage cache on all devices.
 // ----------------------------------------------------
-const DATA_VERSION = "v20260828_v400"; // <-- bump this when data changes
+const DATA_VERSION = "v20260926_v800"; // <-- bump this when data changes
 const storedVersion = localStorage.getItem("gd_data_version");
 if (storedVersion !== DATA_VERSION) {
   // Clear all old product/category/review cache
