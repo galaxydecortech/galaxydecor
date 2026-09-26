@@ -79,9 +79,11 @@ window.GalaxyAPI = {
         if (Array.isArray(solutions)) window.GalaxyAppInstance.solutions = solutions;
         if (store && typeof store === 'object' && !store.error) window.GalaxyAppInstance.updateStoreConfig();
 
-        // Re-render catalog grid smoothly without resetting scroll position or re-triggering full router navigation
+        // Re-render catalog grid or homepage grid smoothly without resetting scroll position or re-triggering full router navigation
         if (typeof window.GalaxyAppInstance.renderProducts === 'function' && window.location.pathname.includes('/products')) {
           window.GalaxyAppInstance.renderProducts();
+        } else if (typeof window.GalaxyAppInstance.renderHomeProducts === 'function' && (window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname.endsWith('/index.html'))) {
+          window.GalaxyAppInstance.renderHomeProducts();
         }
       }
 

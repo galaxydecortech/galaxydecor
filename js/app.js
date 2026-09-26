@@ -977,6 +977,15 @@ class ECommerceApp {
     });
   }
 
+  renderHomeProducts() {
+    const homeProductsGrid = document.getElementById("home-products-grid");
+    if (homeProductsGrid) {
+      let featuredList = this.products.slice(0, 6);
+      homeProductsGrid.innerHTML = featuredList.map(p => this.renderProductCardHTML(p)).join("");
+      this.bindProductCardEvents(homeProductsGrid);
+    }
+  }
+
   // --- 1. Render HOME PAGE ---
   renderHome() {
     this.appRoot.innerHTML = `
@@ -1315,12 +1324,7 @@ class ECommerceApp {
     lucide.createIcons();
 
     // Inject Home Products (first 6 items)
-    const homeProductsGrid = document.getElementById("home-products-grid");
-    if (homeProductsGrid) {
-      let featuredList = this.products.slice(0, 6);
-      homeProductsGrid.innerHTML = featuredList.map(p => this.renderProductCardHTML(p)).join("");
-      this.bindProductCardEvents(homeProductsGrid);
-    }
+    this.renderHomeProducts();
 
     // Set up reviews slider and hero banner slideshow animations
     this.initReviewSlider();
